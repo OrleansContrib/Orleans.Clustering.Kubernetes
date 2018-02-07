@@ -1,0 +1,49 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2027
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{17515BBD-025A-4717-94A1-D0B36A932556}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		.circleci\config.yml = .circleci\config.yml
+		README.md = README.md
+		README.Nuget.md = README.Nuget.md
+		swagger.json = swagger.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{68EC7F38-64E4-4D90-9D37-DCE4355C06B5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{39B13BFA-CC5E-416B-90BE-EDF80A05258D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Clustering.Kubernetes.Test", "test\Orleans.Clustering.Kubernetes.Test\Orleans.Clustering.Kubernetes.Test.csproj", "{3D5BDCE8-FF21-453D-83F9-3CF0B1DD4F9B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Orleans.Clustering.Kubernetes", "src\Orleans.Clustering.Kubernetes\Orleans.Clustering.Kubernetes.csproj", "{7F6606C2-DB5B-493E-9670-517EDFE7C7F1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3D5BDCE8-FF21-453D-83F9-3CF0B1DD4F9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D5BDCE8-FF21-453D-83F9-3CF0B1DD4F9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D5BDCE8-FF21-453D-83F9-3CF0B1DD4F9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D5BDCE8-FF21-453D-83F9-3CF0B1DD4F9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F6606C2-DB5B-493E-9670-517EDFE7C7F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F6606C2-DB5B-493E-9670-517EDFE7C7F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7F6606C2-DB5B-493E-9670-517EDFE7C7F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7F6606C2-DB5B-493E-9670-517EDFE7C7F1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3D5BDCE8-FF21-453D-83F9-3CF0B1DD4F9B} = {39B13BFA-CC5E-416B-90BE-EDF80A05258D}
+		{7F6606C2-DB5B-493E-9670-517EDFE7C7F1} = {68EC7F38-64E4-4D90-9D37-DCE4355C06B5}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5D3C6DC3-FEAF-4240-A9AB-285AB5FFA873}
+	EndGlobalSection
+EndGlobal
