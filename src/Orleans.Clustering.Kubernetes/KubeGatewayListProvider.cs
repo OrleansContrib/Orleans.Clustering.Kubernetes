@@ -48,7 +48,7 @@ namespace Orleans.Clustering.Kubernetes
             }
             catch (Exception exc)
             {
-                this._logger.LogError(exc, $"Unable to get gateways from Kube objects for cluster {this._clusterId}");
+                this._logger?.LogError(exc, $"Unable to get gateways from Kube objects for cluster {this._clusterId}");
                 throw;
             }
         }
