@@ -13,6 +13,7 @@
 *.userprefs
 
 # Build results
+[Pp]ublish[Oo]utput/
 [Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/

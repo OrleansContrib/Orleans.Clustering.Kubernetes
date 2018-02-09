@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Orleans.Clustering.Kubernetes.Options;
 using Orleans.Hosting;
 using Orleans.Messaging;
 using System;
@@ -20,9 +19,27 @@ namespace Orleans.Clustering.Kubernetes
             return builder.ConfigureServices(services => services.UseKubeMembership(configureOptions));
         }
 
+        public static ISiloHostBuilder UseKubeMembership(this ISiloHostBuilder builder)
+        {
+            return builder.ConfigureServices(services =>
+            {
+                services.AddOptions<KubeClusteringOptions>();
+                services.AddSingleton<IMembershipTable, KubeMembershipTable>();
+            });
+        }
+
         public static IClientBuilder UseKubeGatewayListProvider(this IClientBuilder builder, Action<KubeGatewayOptions> configureOptions)
         {
             return builder.ConfigureServices(services => services.UseKubeGatewayListProvider(configureOptions));
+        }
+
+        public static IClientBuilder UseKubeGatewayListProvider(this IClientBuilder builder)
+        {
+            return builder.ConfigureServices(services =>
+            {
+                services.AddOptions<KubeGatewayOptions>();
+                services.AddSingleton<IGatewayListProvider, KubeGatewayListProvider>();
+            });
         }
 
         public static IClientBuilder UseKubeGatewayListProvider(this IClientBuilder builder, Action<OptionsBuilder<KubeGatewayOptions>> configureOptions)

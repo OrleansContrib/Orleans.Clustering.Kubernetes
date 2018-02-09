@@ -19,7 +19,7 @@ namespace Orleans.Clustering.Kubernetes.Test
         [Fact]
         public async Task CRDTest()
         {
-            var crds = await this._client.ListCRDs("stable.example.com");
+            var crds = await this._client.ListCRDs();
 
             var crdToCleanUp = crds.SingleOrDefault(c => c.Metadata.Name == "crontabs.stable.example.com");
 
@@ -51,7 +51,7 @@ namespace Orleans.Clustering.Kubernetes.Test
 
             var crdCreated = await this._client.CreateCRD(newCrd);
 
-            crds = await this._client.ListCRDs("stable.example.com");
+            crds = await this._client.ListCRDs();
             Assert.NotNull(crds);
             Assert.True(crds.Count == 1);
 
@@ -67,17 +67,17 @@ namespace Orleans.Clustering.Kubernetes.Test
                 Image = "my-awesome-cron-image"
             };
 
-            var customObjCreated = await this._client.CreateCustomObject("stable.example.com", "v1", "test", "crontabs", newCustomObj);
+            var customObjCreated = await this._client.CreateCustomObject("v1", "crontabs", newCustomObj);
             Assert.NotNull(customObjCreated);
 
-            var customObjs = await this._client.ListCustomObjects<TestCustomObject>("stable.example.com", "v1", "test", "crontabs");
+            var customObjs = await this._client.ListCustomObjects<TestCustomObject>("v1", "crontabs");
             Assert.NotNull(customObjs);
             Assert.True(customObjs.Count == 1);
 
-            var customObjFound = await this._client.GetCustomObject<TestCustomObject>("my-new-cron-object", "stable.example.com", "v1", "test", "crontabs");
+            var customObjFound = await this._client.GetCustomObject<TestCustomObject>("my-new-cron-object", "v1", "crontabs");
             Assert.NotNull(customObjFound);
 
-            await this._client.DeleteCustomObject(customObjCreated.Metadata.Name, "stable.example.com", "v1", "test", "crontabs");
+            await this._client.DeleteCustomObject(customObjCreated.Metadata.Name, "v1", "crontabs");
 
             crdToCleanUp = crds.SingleOrDefault(c => c.Metadata.Name == "crontabs.stable.example.com");
             Assert.NotNull(crdToCleanUp);
@@ -97,6 +97,6 @@ namespace Orleans.Clustering.Kubernetes.Test
 
     public class APIFixture
     {
-        internal KubeClient Client { get; set; } = new KubeClient();
+        internal KubeClient Client { get; set; } = new KubeClient(null, "http://localhost:8001", group: "stable.example.com", apiToken: "test", certificate: "test");
     }
 }

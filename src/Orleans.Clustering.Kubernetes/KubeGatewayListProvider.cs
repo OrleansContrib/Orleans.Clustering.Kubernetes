@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Clustering.Kubernetes.API;
 using Orleans.Clustering.Kubernetes.Models;
-using Orleans.Clustering.Kubernetes.Options;
 using Orleans.Messaging;
 using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
@@ -19,6 +18,7 @@ namespace Orleans.Clustering.Kubernetes
         private const string PROVIDER_MODEL_VERSION = "v1";
         private readonly KubeGatewayOptions _options;
         private readonly ILogger _logger;
+        private readonly ILoggerFactory _loggerFactory;
         private readonly TimeSpan _maxStaleness;
         private readonly string _clusterId;
 
@@ -29,6 +29,7 @@ namespace Orleans.Clustering.Kubernetes
 
         public KubeGatewayListProvider(ILoggerFactory loggerFactory, IOptions<KubeGatewayOptions> options, ClientConfiguration clientConfiguration)
         {
+            this._loggerFactory = loggerFactory;
             this._maxStaleness = clientConfiguration.GatewayListRefreshPeriod;
             this._logger = loggerFactory?.CreateLogger<KubeGatewayListProvider>();
             this._options = options.Value;
@@ -39,8 +40,7 @@ namespace Orleans.Clustering.Kubernetes
         {
             try
             {
-                var silos = await this._kube.ListCustomObjects<SiloEntity>(
-                    this._options.Group, PROVIDER_MODEL_VERSION, this._options.Namespace, SiloEntity.PLURAL);
+                var silos = await this._kube.ListCustomObjects<SiloEntity>(PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
 
                 var gateways = silos.Where(s => s.Status == SiloStatus.Active && s.ProxyPort != 0)
                     .Select(ConvertToGatewayUri).ToList();
@@ -55,7 +55,9 @@ namespace Orleans.Clustering.Kubernetes
 
         public Task InitializeGatewayListProvider()
         {
-            this._kube = new KubeClient(this._options.APIEndpoint);
+            this._kube = new KubeClient(
+                this._loggerFactory, this._options.APIEndpoint, this._options.Group,
+                this._options.APIToken, this._options.CertificateData);
 
             return Task.CompletedTask;
         }

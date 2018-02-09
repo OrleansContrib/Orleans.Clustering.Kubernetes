@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Clustering.Kubernetes;
-using Orleans.Clustering.Kubernetes.Options;
 using Orleans.Clustering.Kubernetes.Test;
 using Orleans.Messaging;
 using Orleans.Runtime;
@@ -34,7 +33,9 @@ public class KubeTests : MembershipTableTestsBase/*, IClassFixture<AzureStorageB
             APIEndpoint = "http://localhost:8001",
             CanCreateResources = true,
             DropResourcesOnInit = true,
-            Namespace = "orleanstest"
+            APIToken = "test",
+            CertificateData = "test",
+            Group = "test.test"
         };
         return new KubeMembershipTable(this.loggerFactory,
             Microsoft.Extensions.Options.Options.Create(new SiloOptions { ClusterId = this.clusterId }), Microsoft.Extensions.Options.Options.Create(options));
@@ -45,7 +46,9 @@ public class KubeTests : MembershipTableTestsBase/*, IClassFixture<AzureStorageB
         var options = new KubeGatewayOptions()
         {
             APIEndpoint = "http://localhost:8001",
-            Namespace = "orleanstest"
+            APIToken = "test",
+            CertificateData = "test",
+            Group = "test.test"
         };
         return new KubeGatewayListProvider(this.loggerFactory, Microsoft.Extensions.Options.Options.Create(options), this.clientConfiguration);
     }

@@ -1,15 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Clustering.Kubernetes.API;
 using Orleans.Clustering.Kubernetes.Models;
-using Orleans.Clustering.Kubernetes.Options;
 using Orleans.Runtime;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 
 namespace Orleans.Clustering.Kubernetes
 {
@@ -35,7 +33,8 @@ namespace Orleans.Clustering.Kubernetes
 
         public async Task InitializeMembershipTable(bool tryInitTableVersion)
         {
-            this._kube = new KubeClient(this._options.APIEndpoint);
+            this._kube = new KubeClient(this._loggerFactory, this._options.APIEndpoint,
+                this._options.Group, this._options.APIToken, this._options.CertificateData);
 
             if (this._options.CanCreateResources)
             {
@@ -57,15 +56,15 @@ namespace Orleans.Clustering.Kubernetes
             var clusterVersion = await GetClusterVersion();
             if (clusterVersion != null)
             {
-                await this._kube.DeleteCustomObject(clusterVersion.Metadata.Name, this._options.Group,
-                            PROVIDER_MODEL_VERSION, this._options.Namespace, ClusterVersionEntity.PLURAL);
+                await this._kube.DeleteCustomObject(clusterVersion.Metadata.Name,
+                            PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL);
             }
 
             var silos = await GetSilos();
             foreach (var silo in silos)
             {
-                await this._kube.DeleteCustomObject(silo.Metadata.Name, this._options.Group,
-                              PROVIDER_MODEL_VERSION, this._options.Namespace, SiloEntity.PLURAL);
+                await this._kube.DeleteCustomObject(silo.Metadata.Name,
+                              PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
             }
         }
 
@@ -77,8 +76,7 @@ namespace Orleans.Clustering.Kubernetes
                 var versionEntity = this.BuildVersionEntity(tableVersion);
 
                 var existentSiloEntry = await this._kube.GetCustomObject<SiloEntity>(
-                    siloEntity.Metadata.Name, this._options.Group, PROVIDER_MODEL_VERSION,
-                    this._options.Namespace, SiloEntity.PLURAL);
+                    siloEntity.Metadata.Name, PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
 
                 if (existentSiloEntry != null) return false;
 
@@ -91,14 +89,12 @@ namespace Orleans.Clustering.Kubernetes
                 }
 
                 var updatedVersionEntity = await this._kube.UpdateCustomObject(
-                    this._options.Group, PROVIDER_MODEL_VERSION,
-                    this._options.Namespace, ClusterVersionEntity.PLURAL, versionEntity);
+                    PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL, versionEntity);
 
                 if (updatedVersionEntity == null) return false;
 
                 var createdSiloEntity = await this._kube.CreateCustomObject(
-                    this._options.Group, PROVIDER_MODEL_VERSION,
-                    this._options.Namespace, SiloEntity.PLURAL, siloEntity);
+                    PROVIDER_MODEL_VERSION, SiloEntity.PLURAL, siloEntity);
 
                 return createdSiloEntity != null;
             }
@@ -163,8 +159,7 @@ namespace Orleans.Clustering.Kubernetes
             {
                 var versionEntity = await this.GetClusterVersion();
                 var entity = await this._kube.GetCustomObject<SiloEntity>(name,
-                    this._options.Group, PROVIDER_MODEL_VERSION,
-                    this._options.Namespace, SiloEntity.PLURAL);
+                    PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
 
                 TableVersion version = null;
                 if (versionEntity != null)
@@ -178,8 +173,11 @@ namespace Orleans.Clustering.Kubernetes
 
                 var memEntries = new List<Tuple<MembershipEntry, string>>();
 
-                MembershipEntry membershipEntry = ParseEntity(entity);
-                memEntries.Add(new Tuple<MembershipEntry, string>(membershipEntry, entity.Metadata.ResourceVersion));
+                if (entity != null)
+                {
+                    MembershipEntry membershipEntry = ParseEntity(entity);
+                    memEntries.Add(new Tuple<MembershipEntry, string>(membershipEntry, entity.Metadata.ResourceVersion));
+                }
 
                 var data = new MembershipTableData(memEntries, version);
                 return data;
@@ -197,16 +195,14 @@ namespace Orleans.Clustering.Kubernetes
             try
             {
                 var siloEntity = await this._kube.GetCustomObject<SiloEntity>(
-                    name, this._options.Group, PROVIDER_MODEL_VERSION,
-                    this._options.Namespace, SiloEntity.PLURAL);
+                    name, PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
 
                 if (siloEntity == null) throw new InvalidOperationException($"Unable to find silo entry {name}.");
 
                 siloEntity.IAmAliveTime = entry.IAmAliveTime;
 
                 await this._kube.UpdateCustomObject(
-                    this._options.Group, PROVIDER_MODEL_VERSION,
-                    this._options.Namespace, SiloEntity.PLURAL, siloEntity);
+                    PROVIDER_MODEL_VERSION, SiloEntity.PLURAL, siloEntity);
             }
             catch (Exception exc)
             {
@@ -223,7 +219,7 @@ namespace Orleans.Clustering.Kubernetes
                 siloEntity.Metadata.ResourceVersion = etag;
 
                 var versionEntity = this.BuildVersionEntity(tableVersion);
-                
+
                 var currentVersionEntity = await this.GetClusterVersion();
 
                 if (currentVersionEntity == null ||
@@ -233,14 +229,12 @@ namespace Orleans.Clustering.Kubernetes
                 }
 
                 var updatedVersionEntity = await this._kube.UpdateCustomObject(
-                    this._options.Group, PROVIDER_MODEL_VERSION,
-                    this._options.Namespace, ClusterVersionEntity.PLURAL, versionEntity);
+                    PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL, versionEntity);
 
                 if (updatedVersionEntity == null) return false;
 
                 var updated = await this._kube.UpdateCustomObject(
-                    this._options.Group, PROVIDER_MODEL_VERSION,
-                    this._options.Namespace, SiloEntity.PLURAL, siloEntity);
+                    PROVIDER_MODEL_VERSION, SiloEntity.PLURAL, siloEntity);
 
                 return updated != null;
             }
@@ -312,9 +306,6 @@ namespace Orleans.Clustering.Kubernetes
                 };
 
                 await this._kube.CreateCRD(siloDefinition);
-
-                // TODO: Investigate how to wait for Kube to commit the objects on etcd before move forward without those delays.
-                //await Task.Delay(1000);
             }
             catch (Exception exc)
             {
@@ -328,9 +319,7 @@ namespace Orleans.Clustering.Kubernetes
             try
             {
                 var version = await this._kube.GetCustomObject<ClusterVersionEntity>(
-                    this._siloOptions.ClusterId, this._options.Group,
-                    PROVIDER_MODEL_VERSION, this._options.Namespace,
-                    ClusterVersionEntity.PLURAL);
+                    this._siloOptions.ClusterId, PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL);
 
                 if (version == null)
                 {
@@ -344,17 +333,17 @@ namespace Orleans.Clustering.Kubernetes
                     };
 
                     var created = await this._kube.CreateCustomObject(
-                        this._options.Group, PROVIDER_MODEL_VERSION, this._options.Namespace,
-                        ClusterVersionEntity.PLURAL, version);
+                        PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL, version);
 
                     if (created != null)
                     {
                         this._logger?.Info($"Created new Cluster Version entity for Cluster {this._siloOptions.ClusterId}.");
                     }
                 }
-
-                // TODO: Investigate how to wait for Kube to commit the objects on etcd before move forward without those delays.
-                //await Task.Delay(1000);
+                else
+                {
+                    this._logger?.Info($"Cluster {this._siloOptions.ClusterId} already exist. Trying to join it.");
+                }
             }
             catch (Exception exc)
             {
@@ -368,30 +357,30 @@ namespace Orleans.Clustering.Kubernetes
             try
             {
                 var versions = await this._kube.ListCustomObjects<ClusterVersionEntity>(
-                    this._options.Group, PROVIDER_MODEL_VERSION, this._options.Namespace, ClusterVersionEntity.PLURAL);
+                    PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL);
 
                 if (versions != null)
                 {
                     foreach (var ver in versions)
                     {
-                        await this._kube.DeleteCustomObject(ver.Metadata.Name, this._options.Group,
-                            PROVIDER_MODEL_VERSION, this._options.Namespace, ClusterVersionEntity.PLURAL);
+                        await this._kube.DeleteCustomObject(ver.Metadata.Name,
+                            PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL);
                     }
                 }
 
                 var silos = await this._kube.ListCustomObjects<SiloEntity>(
-                    this._options.Group, PROVIDER_MODEL_VERSION, this._options.Namespace, SiloEntity.PLURAL);
+                    PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
 
                 if (silos != null)
                 {
                     foreach (var silo in silos)
                     {
-                        await this._kube.DeleteCustomObject(silo.Metadata.Name, this._options.Group,
-                            PROVIDER_MODEL_VERSION, this._options.Namespace, SiloEntity.PLURAL);
+                        await this._kube.DeleteCustomObject(silo.Metadata.Name,
+                            PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
                     }
                 }
 
-                var definitions = await this._kube.ListCRDs(this._options.Group);
+                var definitions = await this._kube.ListCRDs();
                 var toRemove = definitions.Where(d =>
                     d.Metadata.Name == this.GetSiloObjectDefinitionName() ||
                     d.Metadata.Name == this.GetClusterVersionObjectDefinitionName()).ToList();
@@ -400,8 +389,6 @@ namespace Orleans.Clustering.Kubernetes
                 {
                     await this._kube.DeleteCRD(def);
                 }
-                // TODO: Investigate how to wait for Kube to commit the objects on etcd before move forward without those delays.
-                //await Task.Delay(1000);
             }
             catch (Exception exc)
             {
@@ -412,7 +399,7 @@ namespace Orleans.Clustering.Kubernetes
         private async Task<ClusterVersionEntity> GetClusterVersion()
         {
             var versions = await this._kube.ListCustomObjects<ClusterVersionEntity>(
-                    this._options.Group, PROVIDER_MODEL_VERSION, this._options.Namespace, ClusterVersionEntity.PLURAL);
+                    PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL);
 
             if (versions == null) return null;
 
@@ -423,7 +410,7 @@ namespace Orleans.Clustering.Kubernetes
         private async Task<IReadOnlyList<SiloEntity>> GetSilos()
         {
             var silos = await this._kube.ListCustomObjects<SiloEntity>(
-                    this._options.Group, PROVIDER_MODEL_VERSION, this._options.Namespace, SiloEntity.PLURAL);
+                    PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
 
             return silos.Where(s => s.ClusterId == this._siloOptions.ClusterId).ToList();
         }
@@ -516,9 +503,6 @@ namespace Orleans.Clustering.Kubernetes
             };
         }
 
-        private static string ConstructSiloEntityId(SiloAddress silo)
-        {
-            return $"{silo.Endpoint.Address}-{silo.Endpoint.Port}-{silo.Generation}";
-        }
+        private static string ConstructSiloEntityId(SiloAddress silo) => $"{silo.Endpoint.Address}-{silo.Endpoint.Port}-{silo.Generation}";
     }
 }
