@@ -28,4 +28,17 @@
     <PackageReference Include="Microsoft.Orleans.OrleansRuntime" Version="2.0.0-beta3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="Definitions\ClusterVersionCRD.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)\Definitions\</PackagePath>
+    </None>
+    <None Include="Definitions\SiloEntryCRD.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>lib\$(TargetFramework)\Definitions\</PackagePath>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -56,8 +56,10 @@ namespace KubeSiloHost
                 .UseKubeMembership(opt =>
                 {
                     //opt.APIEndpoint = "http://localhost:8001";
+                    //opt.CertificateData = "test";
+                    //opt.APIToken = "test";
                     opt.CanCreateResources = true;
-                    //opt.DropResourcesOnInit = true;
+                    opt.DropResourcesOnInit = true;
                 })
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(HelloGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddConsole());
