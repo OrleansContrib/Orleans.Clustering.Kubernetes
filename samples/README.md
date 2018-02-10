@@ -6,7 +6,7 @@ This directory contains 3 projects to show a practical example of Orleans runnin
 2. `KubeSiloHost` - Orleans silo host.
 3. `KubeGatewayHost` - An Orleans silo which has the gateway enabled.
 
-> NOTE: The reason the gateway and non-gateway silos are on different projects, is just to ilustrato that you don't have to expose all your pods to outside world in case you don't want it. It is not a requirement and all silos can be gateways if you want it.
+> NOTE: The reason the gateway and non-gateway silos are on different projects, is just to illustrate that you don't have to expose all your pods to outside world in case you don't want it. It is not a requirement and all silos can be gateways if you want it.
 
 ## Pre-requisites
 
