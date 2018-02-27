@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orleans.Configuration;
 using Orleans.Messaging;
 using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
@@ -33,9 +34,8 @@ namespace Orleans.Clustering.Kubernetes.Test
         private readonly IGatewayListProvider gatewayListProvider;
         protected readonly string clusterId;
         protected ILoggerFactory loggerFactory;
-        protected IOptions<SiloOptions> siloOptions;
-        protected IOptions<ClusterClientOptions> clientOptions;
-        protected readonly ClientConfiguration clientConfiguration;
+        protected IOptions<ClusterOptions> clusterOptions;
+        //protected readonly ClientConfiguration clientConfiguration;
         protected MembershipTableTestsBase(/*ConnectionStringFixture fixture, TestEnvironmentFixture environment, */LoggerFilterOptions filters)
         {
             //this.environment = environment;
@@ -48,19 +48,19 @@ namespace Orleans.Clustering.Kubernetes.Test
 
             //fixture.InitializeConnectionStringAccessor(GetConnectionString);
             //this.connectionString = fixture.ConnectionString;
-            this.siloOptions = Microsoft.Extensions.Options.Options.Create(new SiloOptions { ClusterId = this.clusterId });
-            this.clientOptions = Microsoft.Extensions.Options.Options.Create(new ClusterClientOptions { ClusterId = this.clusterId });
+            this.clusterOptions = Options.Create(new ClusterOptions { ClusterId = this.clusterId });
+           
             var adoVariant = GetAdoInvariant();
 
             this.membershipTable = CreateMembershipTable(this.logger);
             this.membershipTable.InitializeMembershipTable(true).WithTimeout(TimeSpan.FromMinutes(10)).Wait();
 
-            this.clientConfiguration = new ClientConfiguration
-            {
-                ClusterId = this.clusterId,
-                AdoInvariant = adoVariant,
-                //DataConnectionString = fixture.ConnectionString
-            };
+            //this.clientConfiguration = new ClientConfiguration
+            //{
+            //    ClusterId = this.clusterId,
+            //    AdoInvariant = adoVariant,
+            //    //DataConnectionString = fixture.ConnectionString
+            //};
 
             this.gatewayListProvider = CreateGatewayListProvider(this.logger);
             this.gatewayListProvider.InitializeGatewayListProvider().WithTimeout(TimeSpan.FromMinutes(3)).Wait();
