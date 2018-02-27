@@ -20,7 +20,7 @@ To run it first create the Kubernetes `namespace` you will use to host the sampl
 
 Each project contains a regular `Dockerfile` which must be built to a Docker image just like a regular docker application.
 
-1. Publish each project project using `dotnet publish -c Release -o PublishOutput`
+1. Publish each project using `dotnet publish -c Release -o PublishOutput`
 2. From the `PublishOutput` directory of each project, build the image with `docker build -t <imagename>:<imagetag> .` and replace `<imagename>` and `<imagetag>` with the respective project name (i.e `kubesilo`, `kubehost`, `kubeclient` for the name and `latest` for the tag) or whatever name you want.
 3. For each project run `kubectl run <servicename> --image=<imagename>:<imagetag> --namespace=<namespace> --image-pull-policy=Never`. First the silo, later the gateway then the client. Be sure to replace the `<xxx>` tags with the values used on previous steps.
 

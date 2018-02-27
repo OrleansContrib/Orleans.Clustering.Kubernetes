@@ -14,6 +14,7 @@ namespace Orleans.Clustering.Kubernetes
 {
     internal class KubeMembershipTable : IMembershipTable
     {
+        private const string ORLEANS_GROUP = "orleans.dot.net";
         private const string PROVIDER_MODEL_VERSION = "v1";
         private const string KUBE_API_VERSION = "apiextensions.k8s.io/v1beta1";
         private const string NAMESPACED = "Namespaced";
@@ -22,7 +23,10 @@ namespace Orleans.Clustering.Kubernetes
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
         private readonly KubeClusteringOptions _options;
+        private readonly string _group;
+
         private KubeClient _kube;
+        
 
         public KubeMembershipTable(ILoggerFactory loggerFactory, IOptions<ClusterOptions> clusterOptions, IOptions<KubeClusteringOptions> clusteringOptions)
         {
@@ -30,12 +34,13 @@ namespace Orleans.Clustering.Kubernetes
             this._loggerFactory = loggerFactory;
             this._logger = loggerFactory?.CreateLogger<KubeMembershipTable>();
             this._options = clusteringOptions.Value;
+            this._group = string.IsNullOrWhiteSpace(this._options.Group) ? ORLEANS_GROUP : this._options.Group;
         }
 
         public async Task InitializeMembershipTable(bool tryInitTableVersion)
         {
             this._kube = new KubeClient(this._loggerFactory, this._options.APIEndpoint,
-                this._options.Group, this._options.APIToken, this._options.CertificateData);
+                this._group, this._options.APIToken, this._options.CertificateData);
 
             if (this._options.CanCreateResources)
             {
@@ -250,9 +255,9 @@ namespace Orleans.Clustering.Kubernetes
             }
         }
 
-        private string GetSiloObjectDefinitionName() => $"{SiloEntity.PLURAL}.{this._options.Group}";
+        private string GetSiloObjectDefinitionName() => $"{SiloEntity.PLURAL}.{this._group}";
 
-        private string GetClusterVersionObjectDefinitionName() => $"{ClusterVersionEntity.PLURAL}.{this._options.Group}";
+        private string GetClusterVersionObjectDefinitionName() => $"{ClusterVersionEntity.PLURAL}.{this._group}";
 
         private async Task TryCreateResources()
         {
@@ -268,7 +273,7 @@ namespace Orleans.Clustering.Kubernetes
                     },
                     Spec = new CustomResourceDefinitionSpec
                     {
-                        Group = this._options.Group,
+                        Group = this._group,
                         Version = PROVIDER_MODEL_VERSION,
                         Scope = NAMESPACED,
                         Names = new CustomResourceDefinitionNames
@@ -293,7 +298,7 @@ namespace Orleans.Clustering.Kubernetes
                     },
                     Spec = new CustomResourceDefinitionSpec
                     {
-                        Group = this._options.Group,
+                        Group = this._group,
                         Version = PROVIDER_MODEL_VERSION,
                         Scope = NAMESPACED,
                         Names = new CustomResourceDefinitionNames
@@ -329,7 +334,7 @@ namespace Orleans.Clustering.Kubernetes
                         ClusterId = this._clusterOptions.ClusterId,
                         ClusterVersion = 0,
                         Kind = ClusterVersionEntity.KIND,
-                        ApiVersion = $"{this._options.Group}/{PROVIDER_MODEL_VERSION}",
+                        ApiVersion = $"{this._group}/{PROVIDER_MODEL_VERSION}",
                         Metadata = new ObjectMetadata { Name = this._clusterOptions.ClusterId }
                     };
 
@@ -473,7 +478,7 @@ namespace Orleans.Clustering.Kubernetes
                 StartTime = memEntry.StartTime,
                 IAmAliveTime = memEntry.IAmAliveTime,
                 Kind = SiloEntity.KIND,
-                ApiVersion = $"{this._options.Group}/{PROVIDER_MODEL_VERSION}",
+                ApiVersion = $"{this._group}/{PROVIDER_MODEL_VERSION}",
             };
 
             if (memEntry.SuspectTimes != null)
@@ -500,7 +505,7 @@ namespace Orleans.Clustering.Kubernetes
                     ResourceVersion = tableVersion.VersionEtag
                 },
                 Kind = ClusterVersionEntity.KIND,
-                ApiVersion = $"{this._options.Group}/{PROVIDER_MODEL_VERSION}",
+                ApiVersion = $"{this._group}/{PROVIDER_MODEL_VERSION}",
             };
         }
 
