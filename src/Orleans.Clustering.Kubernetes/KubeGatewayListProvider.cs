@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Clustering.Kubernetes.API;
 using Orleans.Clustering.Kubernetes.Models;
+using Orleans.Configuration;
 using Orleans.Messaging;
 using Orleans.Runtime;
 using Orleans.Runtime.Configuration;
@@ -27,13 +28,13 @@ namespace Orleans.Clustering.Kubernetes
         public TimeSpan MaxStaleness => this._maxStaleness;
         public bool IsUpdatable => true;
 
-        public KubeGatewayListProvider(ILoggerFactory loggerFactory, IOptions<KubeGatewayOptions> options, ClientConfiguration clientConfiguration)
+        public KubeGatewayListProvider(ILoggerFactory loggerFactory, IOptions<KubeGatewayOptions> options, IOptions<ClusterOptions> clusterOptions, IOptions<GatewayOptions> gatewayOptions)
         {
             this._loggerFactory = loggerFactory;
-            this._maxStaleness = clientConfiguration.GatewayListRefreshPeriod;
+            this._maxStaleness = gatewayOptions.Value.GatewayListRefreshPeriod;
             this._logger = loggerFactory?.CreateLogger<KubeGatewayListProvider>();
             this._options = options.Value;
-            this._clusterId = clientConfiguration.ClusterId;
+            this._clusterId = clusterOptions.Value.ClusterId;
         }
 
         public async Task<IList<Uri>> GetGateways()

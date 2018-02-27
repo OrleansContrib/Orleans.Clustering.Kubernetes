@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Orleans;
 using Orleans.Clustering.Kubernetes;
 using Orleans.Clustering.Kubernetes.Test;
+using Orleans.Configuration;
 using Orleans.Messaging;
-using Orleans.Runtime;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -37,8 +38,7 @@ public class KubeTests : MembershipTableTestsBase/*, IClassFixture<AzureStorageB
             CertificateData = "test",
             Group = "test.test"
         };
-        return new KubeMembershipTable(this.loggerFactory,
-            Microsoft.Extensions.Options.Options.Create(new SiloOptions { ClusterId = this.clusterId }), Microsoft.Extensions.Options.Options.Create(options));
+        return new KubeMembershipTable(this.loggerFactory, Options.Create(new ClusterOptions { ClusterId = this.clusterId }), Options.Create(options));
     }
 
     protected override IGatewayListProvider CreateGatewayListProvider(ILogger logger)
@@ -50,7 +50,7 @@ public class KubeTests : MembershipTableTestsBase/*, IClassFixture<AzureStorageB
             CertificateData = "test",
             Group = "test.test"
         };
-        return new KubeGatewayListProvider(this.loggerFactory, Microsoft.Extensions.Options.Options.Create(options), this.clientConfiguration);
+        return new KubeGatewayListProvider(this.loggerFactory, Options.Create(options), Options.Create(new ClusterOptions { ClusterId = this.clusterId }), Options.Create(new GatewayOptions()));
     }
 
     protected override Task<string> GetConnectionString()

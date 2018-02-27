@@ -2,10 +2,9 @@ using HelloWorld.Grains;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Clustering.Kubernetes;
+using Orleans.Configuration;
 using Orleans.Hosting;
-using Orleans.Runtime.Configuration;
 using System;
-using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,12 +14,7 @@ namespace KubeGatewayHost
     {
         private static readonly AutoResetEvent Closing = new AutoResetEvent(false);
 
-        public static int Main(string[] args)
-        {
-            return RunMainAsync().Result;
-        }
-
-        private static async Task<int> RunMainAsync()
+        public static async Task<int> Main(string[] args)
         {
             try
             {
@@ -45,16 +39,10 @@ namespace KubeGatewayHost
 
         private static async Task<ISiloHost> StartSilo()
         {
-            // define the cluster configuration
-            var config = new ClusterConfiguration();
-            config.Defaults.Port = new Random(1).Next(30001, 30100);
-            config.Defaults.ProxyGatewayEndpoint = new IPEndPoint(IPAddress.Any, new Random(1).Next(20001, 20100));
-            config.Globals.ClusterId = "testcluster";
-            config.AddMemoryStorageProvider();
-            config.Globals.ReminderServiceType = GlobalConfiguration.ReminderServiceProviderType.Disabled;
-
             var builder = new SiloHostBuilder()
-                .UseConfiguration(config)
+                .Configure(options => options.ClusterId = "testcluster" )
+                .ConfigureEndpoints(new Random(1).Next(30001, 30100), new Random(1).Next(20001, 20100), listenOnAllHostAddresses: true)
+                .AddMemoryGrainStorageAsDefault()
                 .UseKubeMembership(opt =>
                 {
                     //opt.APIEndpoint = "http://localhost:8001";

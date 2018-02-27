@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Clustering.Kubernetes.API;
 using Orleans.Clustering.Kubernetes.Models;
+using Orleans.Configuration;
 using Orleans.Runtime;
 using System;
 using System.Collections.Generic;
@@ -17,15 +18,15 @@ namespace Orleans.Clustering.Kubernetes
         private const string KUBE_API_VERSION = "apiextensions.k8s.io/v1beta1";
         private const string NAMESPACED = "Namespaced";
 
-        private readonly SiloOptions _siloOptions;
+        private readonly ClusterOptions _clusterOptions;
         private readonly ILoggerFactory _loggerFactory;
         private readonly ILogger _logger;
         private readonly KubeClusteringOptions _options;
         private KubeClient _kube;
 
-        public KubeMembershipTable(ILoggerFactory loggerFactory, IOptions<SiloOptions> siloOptions, IOptions<KubeClusteringOptions> clusteringOptions)
+        public KubeMembershipTable(ILoggerFactory loggerFactory, IOptions<ClusterOptions> clusterOptions, IOptions<KubeClusteringOptions> clusteringOptions)
         {
-            this._siloOptions = siloOptions.Value;
+            this._clusterOptions = clusterOptions.Value;
             this._loggerFactory = loggerFactory;
             this._logger = loggerFactory?.CreateLogger<KubeMembershipTable>();
             this._options = clusteringOptions.Value;
@@ -146,7 +147,7 @@ namespace Orleans.Clustering.Kubernetes
             }
             catch (Exception exc)
             {
-                this._logger?.LogWarning(exc, $"Failure reading all silo entries for cluster id {this._siloOptions.ClusterId}");
+                this._logger?.LogWarning(exc, $"Failure reading all silo entries for cluster id {this._clusterOptions.ClusterId}");
                 throw;
             }
         }
@@ -184,7 +185,7 @@ namespace Orleans.Clustering.Kubernetes
             }
             catch (Exception exc)
             {
-                this._logger?.LogError(exc, $"Failure reading silo entry {name} for cluster id {this._siloOptions.ClusterId}.");
+                this._logger?.LogError(exc, $"Failure reading silo entry {name} for cluster id {this._clusterOptions.ClusterId}.");
                 throw;
             }
         }
@@ -319,17 +320,17 @@ namespace Orleans.Clustering.Kubernetes
             try
             {
                 var version = await this._kube.GetCustomObject<ClusterVersionEntity>(
-                    this._siloOptions.ClusterId, PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL);
+                    this._clusterOptions.ClusterId, PROVIDER_MODEL_VERSION, ClusterVersionEntity.PLURAL);
 
                 if (version == null)
                 {
                     version = new ClusterVersionEntity
                     {
-                        ClusterId = this._siloOptions.ClusterId,
+                        ClusterId = this._clusterOptions.ClusterId,
                         ClusterVersion = 0,
                         Kind = ClusterVersionEntity.KIND,
                         ApiVersion = $"{this._options.Group}/{PROVIDER_MODEL_VERSION}",
-                        Metadata = new ObjectMetadata { Name = this._siloOptions.ClusterId }
+                        Metadata = new ObjectMetadata { Name = this._clusterOptions.ClusterId }
                     };
 
                     var created = await this._kube.CreateCustomObject(
@@ -337,12 +338,12 @@ namespace Orleans.Clustering.Kubernetes
 
                     if (created != null)
                     {
-                        this._logger?.Info($"Created new Cluster Version entity for Cluster {this._siloOptions.ClusterId}.");
+                        this._logger?.Info($"Created new Cluster Version entity for Cluster {this._clusterOptions.ClusterId}.");
                     }
                 }
                 else
                 {
-                    this._logger?.Info($"Cluster {this._siloOptions.ClusterId} already exist. Trying to join it.");
+                    this._logger?.Info($"Cluster {this._clusterOptions.ClusterId} already exist. Trying to join it.");
                 }
             }
             catch (Exception exc)
@@ -403,8 +404,8 @@ namespace Orleans.Clustering.Kubernetes
 
             if (versions == null) return null;
 
-            return versions.FirstOrDefault(v => v.ClusterId == this._siloOptions.ClusterId &&
-                v.Metadata.Name == this._siloOptions.ClusterId);
+            return versions.FirstOrDefault(v => v.ClusterId == this._clusterOptions.ClusterId &&
+                v.Metadata.Name == this._clusterOptions.ClusterId);
         }
 
         private async Task<IReadOnlyList<SiloEntity>> GetSilos()
@@ -412,7 +413,7 @@ namespace Orleans.Clustering.Kubernetes
             var silos = await this._kube.ListCustomObjects<SiloEntity>(
                     PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
 
-            return silos.Where(s => s.ClusterId == this._siloOptions.ClusterId).ToList();
+            return silos.Where(s => s.ClusterId == this._clusterOptions.ClusterId).ToList();
         }
 
         private static MembershipEntry ParseEntity(SiloEntity entity)
@@ -461,7 +462,7 @@ namespace Orleans.Clustering.Kubernetes
             var tableEntry = new SiloEntity
             {
                 Metadata = new ObjectMetadata { Name = ConstructSiloEntityId(memEntry.SiloAddress) },
-                ClusterId = this._siloOptions.ClusterId,
+                ClusterId = this._clusterOptions.ClusterId,
                 Address = memEntry.SiloAddress.Endpoint.Address.ToString(),
                 Port = memEntry.SiloAddress.Endpoint.Port,
                 Generation = memEntry.SiloAddress.Generation,
@@ -491,11 +492,11 @@ namespace Orleans.Clustering.Kubernetes
         {
             return new ClusterVersionEntity
             {
-                ClusterId = this._siloOptions.ClusterId,
+                ClusterId = this._clusterOptions.ClusterId,
                 ClusterVersion = tableVersion.Version,
                 Metadata = new ObjectMetadata
                 {
-                    Name = this._siloOptions.ClusterId,
+                    Name = this._clusterOptions.ClusterId,
                     ResourceVersion = tableVersion.VersionEtag
                 },
                 Kind = ClusterVersionEntity.KIND,

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Clustering.Kubernetes;
 using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,12 +16,7 @@ namespace KubeClient
     {
         private static readonly AutoResetEvent Closing = new AutoResetEvent(false);
 
-        static int Main(string[] args)
-        {
-            return RunMainAsync().Result;
-        }
-
-        private static async Task<int> RunMainAsync()
+        static async Task<int> Main(string[] args)
         {
             try
             {
@@ -53,13 +47,8 @@ namespace KubeClient
             {
                 try
                 {
-                    var config = new ClientConfiguration
-                    {
-                        ClusterId = "testcluster"
-                    };
-
                     client = new ClientBuilder()
-                        .UseConfiguration(config)
+                        .ConfigureCluster(options => options.ClusterId = "testcluster")
                         .UseKubeGatewayListProvider()
                         .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(IHello).Assembly).WithReferences())
                         .ConfigureLogging(logging => logging.AddConsole())
