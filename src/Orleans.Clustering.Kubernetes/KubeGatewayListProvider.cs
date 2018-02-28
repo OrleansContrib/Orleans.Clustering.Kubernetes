@@ -5,7 +5,6 @@ using Orleans.Clustering.Kubernetes.Models;
 using Orleans.Configuration;
 using Orleans.Messaging;
 using Orleans.Runtime;
-using Orleans.Runtime.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +16,7 @@ namespace Orleans.Clustering.Kubernetes
     internal class KubeGatewayListProvider : IGatewayListProvider
     {
         private const string PROVIDER_MODEL_VERSION = "v1";
+
         private readonly KubeGatewayOptions _options;
         private readonly ILogger _logger;
         private readonly ILoggerFactory _loggerFactory;
@@ -57,7 +57,7 @@ namespace Orleans.Clustering.Kubernetes
         public Task InitializeGatewayListProvider()
         {
             this._kube = new KubeClient(
-                this._loggerFactory, this._options.APIEndpoint, this._options.Group,
+                this._loggerFactory, null, this._options.APIEndpoint, this._options.Group,
                 this._options.APIToken, this._options.CertificateData);
 
             return Task.CompletedTask;

@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 using Orleans.Clustering.Kubernetes.API;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,22 +8,22 @@ namespace Orleans.Clustering.Kubernetes.Test
 {
     public class APITest : IClassFixture<APIFixture>
     {
-        private KubeClient _client;
+        private KubeClient _kubeClient;
 
         public APITest(APIFixture fixture)
         {
-            this._client = fixture.Client;
+            this._kubeClient = fixture.Client;
         }
 
         [Fact]
         public async Task CRDTest()
         {
-            var crds = await this._client.ListCRDs();
+            var crds = await this._kubeClient.ListCRDs();
 
             var crdToCleanUp = crds.SingleOrDefault(c => c.Metadata.Name == "crontabs.stable.example.com");
 
             if (crdToCleanUp != null)
-                await this._client.DeleteCRD(crdToCleanUp);
+                await this._kubeClient.DeleteCRD(crdToCleanUp);
 
             var newCrd = new CustomResourceDefinition
             {
@@ -49,9 +48,9 @@ namespace Orleans.Clustering.Kubernetes.Test
                 }
             };
 
-            var crdCreated = await this._client.CreateCRD(newCrd);
+            var crdCreated = await this._kubeClient.CreateCRD(newCrd);
 
-            crds = await this._client.ListCRDs();
+            crds = await this._kubeClient.ListCRDs();
             Assert.NotNull(crds);
             Assert.True(crds.Count == 1);
 
@@ -67,36 +66,34 @@ namespace Orleans.Clustering.Kubernetes.Test
                 Image = "my-awesome-cron-image"
             };
 
-            var customObjCreated = await this._client.CreateCustomObject("v1", "crontabs", newCustomObj);
+            var customObjCreated = await this._kubeClient.CreateCustomObject("v1", "crontabs", newCustomObj);
             Assert.NotNull(customObjCreated);
 
-            var customObjs = await this._client.ListCustomObjects<TestCustomObject>("v1", "crontabs");
+            var customObjs = await this._kubeClient.ListCustomObjects<TestCustomObject>("v1", "crontabs");
             Assert.NotNull(customObjs);
             Assert.True(customObjs.Count == 1);
 
-            var customObjFound = await this._client.GetCustomObject<TestCustomObject>("my-new-cron-object", "v1", "crontabs");
+            var customObjFound = await this._kubeClient.GetCustomObject<TestCustomObject>("my-new-cron-object", "v1", "crontabs");
             Assert.NotNull(customObjFound);
 
-            await this._client.DeleteCustomObject(customObjCreated.Metadata.Name, "v1", "crontabs");
+            await this._kubeClient.DeleteCustomObject(customObjCreated.Metadata.Name, "v1", "crontabs");
 
             crdToCleanUp = crds.SingleOrDefault(c => c.Metadata.Name == "crontabs.stable.example.com");
             Assert.NotNull(crdToCleanUp);
 
-            await this._client.DeleteCRD(crdToCleanUp);
+            await this._kubeClient.DeleteCRD(crdToCleanUp);
         }
 
         private class TestCustomObject : CustomObject
         {
-            [JsonProperty(nameof(CronSpec))]
             public string CronSpec { get; set; }
 
-            [JsonProperty(nameof(Image))]
             public string Image { get; set; }
         }
     }
 
     public class APIFixture
     {
-        internal KubeClient Client { get; set; } = new KubeClient(null, "http://localhost:8001", group: "stable.example.com", apiToken: "test", certificate: "test");
+        internal KubeClient Client { get; set; } = new KubeClient(null, null, "http://localhost:8001", group: "stable.example.com");
     }
 }
