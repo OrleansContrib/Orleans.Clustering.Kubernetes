@@ -58,6 +58,7 @@ namespace Orleans.Clustering.Kubernetes
             Action<OptionsBuilder<KubeClusteringOptions>> configureOptions)
         {
             configureOptions?.Invoke(services.AddOptions<KubeClusteringOptions>());
+
             return services.AddSingleton<IMembershipTable, KubeMembershipTable>();
         }
 
@@ -71,6 +72,7 @@ namespace Orleans.Clustering.Kubernetes
             Action<OptionsBuilder<KubeGatewayOptions>> configureOptions)
         {
             configureOptions?.Invoke(services.AddOptions<KubeGatewayOptions>());
+
             return services.AddSingleton<IGatewayListProvider, KubeGatewayListProvider>();
         }
     }

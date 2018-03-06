@@ -1,13 +1,17 @@
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,8 +21,24 @@ namespace Orleans.Clustering.Kubernetes.API
     // TODO: Add proper logging
     internal class KubeClient
     {
-        private static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
-        private static readonly Encoding _encoding = Encoding.GetEncoding("utf-8");
+        private static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
+        {
+            NullValueHandling = NullValueHandling.Ignore,
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            Culture = CultureInfo.InvariantCulture,
+            Converters = new []
+            {
+                new StringEnumConverter(true)
+            },
+#if DEBUG
+            Formatting = Formatting.Indented
+#else
+            Formatting = Formatting.None
+#endif
+        };
+        private static readonly Encoding _encoding = Encoding.UTF8;
+        private static readonly IReadOnlyList<CustomResourceDefinition> _emptyCustomResourceDefinitionList = new List<CustomResourceDefinition>();
+
         private const string CRD_ENDPOINT = "/apis/apiextensions.k8s.io/v1beta1/customresourcedefinitions";
         private const string MEDIA_TYPE = "application/json";
         private const string SERVICE_ACCOUNT_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/";
@@ -30,82 +50,125 @@ namespace Orleans.Clustering.Kubernetes.API
         private const string RETURN_CHAR = "\r";
         private const string NEWLINE_CHAR = "\n";
         private const string IN_CLUSTER_KUBE_ENDPOINT = "https://kubernetes.default.svc.cluster.local";
-        private const string ORLEANS_GROUP = "orleans.dot.net";
+        internal const string ORLEANS_GROUP = "orleans.dot.net";
+        private const string ORLEANS_NAMESPACE = "orleanstest";
 
-        private readonly HttpClient _client;
-        private readonly X509Certificate2 _cert;
         private readonly ILogger _logger;
         private readonly string _namespace;
         private readonly string _group;
+        private readonly HttpClient _client;
+        private readonly X509Certificate2 _rootCertificate;
 
-        public KubeClient(
-            ILoggerFactory loggerFactory, string apiEndpoint = "",
-            string group = "", string apiToken = "", string certificate = "")
+        public KubeClient(ILoggerFactory loggerFactory, HttpClientHandler httpClientHandler = null, string apiEndpoint = null, string group = null, string apiToken = null, string certificate = null)
         {
             this._logger = loggerFactory?.CreateLogger<KubeClient>();
 
-            var namespaceFile = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_NAMESPACE_FILENAME);
-            if (!File.Exists(namespaceFile))
+            var namespaceFilePath = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_NAMESPACE_FILENAME);
+
+            if (!File.Exists(namespaceFilePath))
             {
-                this._logger?.LogWarning(
-                    $"Namespace file {namespaceFile} wasn't found. Are we running in a pod? If you are running unit tests outside a pod, please create the namespace 'orleanstest'.");
-                this._namespace = "orleanstest";
+                this._logger?.LogWarning($"Namespace file {namespaceFilePath} wasn't found. Are we running in a pod? If you are running unit tests outside a pod, please create the test namespace '{ORLEANS_NAMESPACE}'.");
+
+                this._namespace = ORLEANS_NAMESPACE;
             }
             else
             {
-                this._namespace = File.ReadAllText(namespaceFile);
+                this._namespace = File.ReadAllText(namespaceFilePath);
             }
 
             this._group = string.IsNullOrWhiteSpace(group) ? ORLEANS_GROUP : group.ToLowerInvariant();
 
-            var handler = new HttpClientHandler
-            {
-                ClientCertificateOptions = ClientCertificateOption.Manual,
-                ServerCertificateCustomValidationCallback =
-                    (httpRequestMessage, cert, cetChain, policyErrors) =>
-                    {
-                        // TODO: Validate it properly using _cert.
-                        return true;
-                    }
-            };
+            var endpointUri = new Uri(string.IsNullOrWhiteSpace(apiEndpoint) ? IN_CLUSTER_KUBE_ENDPOINT : apiEndpoint);
 
-            string endpoint = string.IsNullOrWhiteSpace(apiEndpoint) ? IN_CLUSTER_KUBE_ENDPOINT : apiEndpoint;
+            var certificateData = default(string);
 
-            this._client = new HttpClient(handler)
+            if (string.IsNullOrWhiteSpace(certificate))
             {
-                BaseAddress = new Uri(endpoint)
-            };
+                var rootCertificateFilePath = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_ROOTCA_FILENAME);
 
-            if (apiToken != "test")
-            {
-                string token = !string.IsNullOrWhiteSpace(apiToken) ? apiToken : File.ReadAllText(Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_TOKEN_FILENAME));
-                if (!string.IsNullOrWhiteSpace(token))
+                if (File.Exists(rootCertificateFilePath))
                 {
-                    this._client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
-                }
-            }
-
-            if (certificate != "test")
-            {
-                string certdata = string.Empty;
-                if (!string.IsNullOrWhiteSpace(certificate))
-                {
-                    certdata = certificate.Replace(BEGIN_CERT_LINE, string.Empty)
-                        .Replace(END_CERT_LINE, string.Empty)
-                        .Replace(RETURN_CHAR, string.Empty)
-                        .Replace(NEWLINE_CHAR, string.Empty);
+                    certificateData = File.ReadAllText(rootCertificateFilePath);
                 }
                 else
                 {
-                    var rootCAFile = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_ROOTCA_FILENAME);
-                    certdata = File.ReadAllText(rootCAFile)
-                        .Replace(BEGIN_CERT_LINE, string.Empty)
-                        .Replace(END_CERT_LINE, string.Empty)
-                        .Replace(RETURN_CHAR, string.Empty)
-                        .Replace(NEWLINE_CHAR, string.Empty);
+                    this._logger?.LogWarning($"Root Certificate file {rootCertificateFilePath} wasn't found, no certificate will be used.");
                 }
+            }
 
-                this._cert = new X509Certificate2(Convert.FromBase64String(certdata));
+            if (!string.IsNullOrWhiteSpace(certificateData))
+            {
+                certificateData = certificateData
+                    .Replace(BEGIN_CERT_LINE, string.Empty)
+                    .Replace(END_CERT_LINE, string.Empty)
+                    .Replace(RETURN_CHAR, string.Empty)
+                    .Replace(NEWLINE_CHAR, string.Empty);
+
+                this._rootCertificate = new X509Certificate2(Convert.FromBase64String(certificateData));
+            }
+
+            var handler = httpClientHandler;
+
+            if (handler == null)
+            {
+                handler = new HttpClientHandler();
+
+                // If the base url is a secure one, install a certificate handler if we've a root certificate configured.
+                if (endpointUri.Scheme == "https" && this._rootCertificate != null)
+                {
+                    handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, serverCertificate, chain, sslPolicyErrors) =>
+                         {
+                             // If the certificate is a valid, signed certificate, return true.
+                             if (sslPolicyErrors == SslPolicyErrors.None)
+                             {
+                                 return true;
+                             }
+
+                             // If there are errors in the certificate chain, look at each error to determine the cause.
+                             if ((sslPolicyErrors & SslPolicyErrors.RemoteCertificateChainErrors) != 0)
+                             {
+                                 chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                                 // add all your extra certificate chain
+                                 chain.ChainPolicy.ExtraStore.Add(this._rootCertificate);
+                                 chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+
+                                 var isValid = chain.Build(serverCertificate);
+
+                                 return isValid;
+                             }
+
+                             // In all other cases, return false.
+                             return false;
+                         };
+                }
+            }
+
+            this._client = new HttpClient(handler)
+            {
+                BaseAddress = endpointUri
+            };
+
+            var bearerToken = apiToken;
+
+            // If no apiToken was passed in, then try to load from file if exists.
+            if (string.IsNullOrWhiteSpace(bearerToken))
+            {
+                var tokenFilePath = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_TOKEN_FILENAME);
+
+                if (File.Exists(tokenFilePath))
+                {
+                    bearerToken = File.ReadAllText(tokenFilePath);
+                }
+                else
+                {
+                    this._logger?.LogWarning($"Token file {tokenFilePath} wasn't found, no API token will be used.");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(bearerToken))
+            {
+                this._client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", bearerToken);
             }
         }
 
@@ -113,54 +176,68 @@ namespace Orleans.Clustering.Kubernetes.API
 
         public async Task<IReadOnlyList<CustomResourceDefinition>> ListCRDs()
         {
-            var resp = await this._client.GetAsync(CRD_ENDPOINT);
+            var response = await this._client.GetAsync(CRD_ENDPOINT).ConfigureAwait(false);
 
-            if (resp.StatusCode == HttpStatusCode.NotFound) return new List<CustomResourceDefinition>();
-
-            if (resp.StatusCode != HttpStatusCode.OK)
+            if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                if (resp.StatusCode != HttpStatusCode.NotFound)
-                {
-                    var err = await resp.Content.ReadAsStringAsync();
-                    this._logger?.LogError($"Failure listing CRDs: {err}"); 
-                }
-                return new List<CustomResourceDefinition>();
+                return _emptyCustomResourceDefinitionList;
             }
 
-            var json = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-            var jobj = JObject.Parse(json);
-            var crds = jobj["items"].ToObject<List<CustomResourceDefinition>>()
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                if (response.StatusCode != HttpStatusCode.NotFound)
+                {
+                    var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    this._logger?.LogError($"Failure listing CRDs: {error}");
+                }
+
+                return _emptyCustomResourceDefinitionList;
+            }
+
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var jsonObject = JObject.Parse(json);
+            var crdList = jsonObject["items"].ToObject<CustomResourceDefinition[]>()
                 .Where(crd => crd.Spec.Group == this._group).ToList();
-            return crds;
+
+            return crdList;
         }
 
         public async Task<CustomResourceDefinition> CreateCRD(CustomResourceDefinition crd)
         {
-            var resp = await this._client.PostAsync(CRD_ENDPOINT,
+            var response = await this._client.PostAsync(CRD_ENDPOINT,
                 new StringContent(JsonConvert.SerializeObject(crd, _jsonSettings),
-                _encoding, MEDIA_TYPE));
+                _encoding,
+                MEDIA_TYPE)).ConfigureAwait(false);
 
-            if (resp.StatusCode != HttpStatusCode.OK &&
-                resp.StatusCode != HttpStatusCode.Created)
+            if (response.StatusCode != HttpStatusCode.OK &&
+                response.StatusCode != HttpStatusCode.Created)
             {
-                var err = await resp.Content.ReadAsStringAsync();
-                this._logger?.LogError($"Failure creating CRD: {err}");
+                var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                this._logger?.LogError($"Failure creating CRD: {error}");
+
                 return null;
             }
 
-            var json = await resp.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
             // TODO: Investigate how to wait for Kube to commit the objects on etcd before move forward without those delays.
             await Task.Delay(300);
-            return JsonConvert.DeserializeObject<CustomResourceDefinition>(json);
+
+            return JsonConvert.DeserializeObject<CustomResourceDefinition>(json, _jsonSettings);
         }
 
         public async Task DeleteCRD(CustomResourceDefinition crd)
         {
-            var resp = await this._client.DeleteAsync($"/apis/apiextensions.k8s.io/v1beta1/customresourcedefinitions/{crd.Metadata.Name}");
-            if (resp.StatusCode != HttpStatusCode.OK)
+            var response = await this._client.DeleteAsync($"/apis/apiextensions.k8s.io/v1beta1/customresourcedefinitions/{crd.Metadata.Name}").ConfigureAwait(false);
+
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                var err = await resp.Content.ReadAsStringAsync();
-                this._logger?.LogError($"Failure deleting CRD: {err}");
+                var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                this._logger?.LogError($"Failure deleting CRD: {error}");
+
                 return;
             }
 
@@ -172,106 +249,128 @@ namespace Orleans.Clustering.Kubernetes.API
 
         #region Custom Objects
 
-        public async Task<TObject> CreateCustomObject<TObject>(
-            string version, string plural, TObject obj) where TObject : CustomObject
+        public async Task<TObject> CreateCustomObject<TObject>(string version, string plural, TObject obj) where TObject : CustomObject
         {
-            var resp = await this._client.PostAsync($"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}",
-                new StringContent(JsonConvert.SerializeObject(obj, _jsonSettings), _encoding, MEDIA_TYPE));
-            if (resp.StatusCode != HttpStatusCode.OK &&
-                resp.StatusCode != HttpStatusCode.Created)
+            var response = await this._client.PostAsync(
+                $"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}",
+                new StringContent(JsonConvert.SerializeObject(obj, _jsonSettings),
+                _encoding,
+                MEDIA_TYPE)).ConfigureAwait(false);
+
+            if (response.StatusCode != HttpStatusCode.OK &&
+                response.StatusCode != HttpStatusCode.Created)
             {
-                var err = await resp.Content.ReadAsStringAsync();
-                this._logger?.LogError($"Failure creating Custom Object: {err}");
+                var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                this._logger?.LogError($"Failure creating Custom Object: {error}");
+
                 return null;
             }
 
-            var json = await resp.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
             // TODO: Investigate how to wait for Kube to commit the objects on etcd before move forward without those delays.
             await Task.Delay(300);
-            return JsonConvert.DeserializeObject<TObject>(json);
+
+            return JsonConvert.DeserializeObject<TObject>(json, _jsonSettings);
         }
 
         public async Task DeleteCustomObject(string name, string version, string plural)
         {
-            var resp = await this._client.DeleteAsync($"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}/{name}");
-            if (resp.StatusCode != HttpStatusCode.OK)
+            var response = await this._client.DeleteAsync($"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}/{name}").ConfigureAwait(false);
+
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                var err = await resp.Content.ReadAsStringAsync();
-                this._logger?.LogError($"Failure deleting Custom Object: {err}");
+                var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                this._logger?.LogError($"Failure deleting Custom Object: {error}");
+
                 return;
             }
+
             // TODO: Investigate how to wait for Kube to commit the objects on etcd before move forward without those delays.
             await Task.Delay(300);
         }
 
-        public async Task<TObject> GetCustomObject<TObject>(
-            string name, string version,
-            string plural) where TObject : CustomObject
+        public async Task<TObject> GetCustomObject<TObject>(string name, string version, string plural) where TObject : CustomObject
         {
-            var resp = await this._client.GetAsync($"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}/{name}");
-            if (resp.StatusCode != HttpStatusCode.OK)
+            var response = await this._client.GetAsync($"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}/{name}").ConfigureAwait(false);
+
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                if (resp.StatusCode == HttpStatusCode.NotFound)
+                if (response.StatusCode == HttpStatusCode.NotFound)
                 {
-                    var err = await resp.Content.ReadAsStringAsync();
-                    this._logger?.LogError($"Failure getting Custom Object: {err}");
+                    var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    this._logger?.LogError($"Failure getting Custom Object: {error}");
                 }
+
                 return null;
             }
 
-            var json = await resp.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<TObject>(json);
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            return JsonConvert.DeserializeObject<TObject>(json, _jsonSettings);
         }
 
-        public async Task<IReadOnlyList<TObject>> ListCustomObjects<TObject>(
-            string version, string plural)
-            where TObject : CustomObject
+        public async Task<IReadOnlyList<TObject>> ListCustomObjects<TObject>(string version, string plural) where TObject : CustomObject
         {
-            var resp = await this._client.GetAsync($"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}");
+            var response = await this._client.GetAsync($"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}").ConfigureAwait(false);
 
-            if (resp.StatusCode == HttpStatusCode.NotFound) return new List<TObject>();
-
-            if (resp.StatusCode != HttpStatusCode.OK)
+            if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                if (resp.StatusCode != HttpStatusCode.NotFound)
-                {
-                    var err = await resp.Content.ReadAsStringAsync();
-                    this._logger?.LogError($"Failure listing Custom Object: {err}");
-                }
                 return new List<TObject>();
             }
 
-            var json = await resp.Content.ReadAsStringAsync();
-            var jobj = JObject.Parse(json);
-            var customObjs = jobj["items"].ToObject<List<TObject>>();
-            return customObjs;
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                if (response.StatusCode != HttpStatusCode.NotFound)
+                {
+                    var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                    this._logger?.LogError($"Failure listing Custom Object: {error}");
+                }
+
+                return new List<TObject>();
+            }
+
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var jsonObject = JObject.Parse(json);
+            var customObjectList = jsonObject["items"].ToObject<List<TObject>>();
+
+            return customObjectList;
         }
 
-        public async Task<TObject> UpdateCustomObject<TObject>(
-            string version, string plural, TObject obj) where TObject : CustomObject
+        public async Task<TObject> UpdateCustomObject<TObject>(string version, string plural, TObject obj) where TObject : CustomObject
         {
-            var resp = await this._client.PutAsync(
-                $"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}/{obj.Metadata.Name}",
-                new StringContent(JsonConvert.SerializeObject(obj, _jsonSettings), _encoding, MEDIA_TYPE));
+            var response = await this._client.PutAsync($"/apis/{this._group}/{version}/namespaces/{this._namespace}/{plural}/{obj.Metadata.Name}",
+                new StringContent(JsonConvert.SerializeObject(obj, _jsonSettings),
+                _encoding,
+                MEDIA_TYPE)).ConfigureAwait(false);
 
-            if (resp.StatusCode == HttpStatusCode.Conflict ||
-                resp.StatusCode == HttpStatusCode.NotFound)
+            if (response.StatusCode == HttpStatusCode.Conflict ||
+                response.StatusCode == HttpStatusCode.NotFound)
             {
                 throw new InvalidOperationException("Invalid Kubernetes object version");
             }
 
-            if (resp.StatusCode != HttpStatusCode.OK)
+            if (response.StatusCode != HttpStatusCode.OK)
             {
-                var err = await resp.Content.ReadAsStringAsync();
-                this._logger?.LogError($"Failure updating Custom Object: {err}");
+                var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+                this._logger?.LogError($"Failure updating Custom Object: {error}");
+
                 return null;
             }
 
-            var json = await resp.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
             // TODO: Investigate how to wait for Kube to commit the objects on etcd before move forward without those delays.
             await Task.Delay(300);
-            return JsonConvert.DeserializeObject<TObject>(json);
+
+            return JsonConvert.DeserializeObject<TObject>(json, _jsonSettings);
         }
+
         #endregion
     }
 }

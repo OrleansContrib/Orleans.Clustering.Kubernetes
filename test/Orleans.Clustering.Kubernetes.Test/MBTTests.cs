@@ -34,8 +34,6 @@ public class KubeTests : MembershipTableTestsBase/*, IClassFixture<AzureStorageB
             APIEndpoint = "http://localhost:8001",
             CanCreateResources = true,
             DropResourcesOnInit = true,
-            APIToken = "test",
-            CertificateData = "test",
             Group = "test.test"
         };
         return new KubeMembershipTable(this.loggerFactory, Options.Create(new ClusterOptions { ClusterId = this.clusterId }), Options.Create(options));
@@ -46,8 +44,6 @@ public class KubeTests : MembershipTableTestsBase/*, IClassFixture<AzureStorageB
         var options = new KubeGatewayOptions()
         {
             APIEndpoint = "http://localhost:8001",
-            APIToken = "test",
-            CertificateData = "test",
             Group = "test.test"
         };
         return new KubeGatewayListProvider(this.loggerFactory, Options.Create(options), Options.Create(new ClusterOptions { ClusterId = this.clusterId }), Options.Create(new GatewayOptions()));

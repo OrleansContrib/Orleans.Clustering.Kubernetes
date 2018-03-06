@@ -16,7 +16,6 @@ namespace Orleans.Clustering.Kubernetes.Models
         [JsonIgnore]
         public const string KIND = "OrleansClusterVersion";
 
-        [JsonProperty(nameof(ClusterVersion))]
         public int ClusterVersion { get; set; } = 0;
     }
 }
