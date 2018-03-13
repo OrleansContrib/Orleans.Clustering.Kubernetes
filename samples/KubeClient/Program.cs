@@ -2,6 +2,7 @@ using HelloWorld.Interfaces;
 using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Clustering.Kubernetes;
+using Orleans.Configuration;
 using Orleans.Runtime;
 using System;
 using System.Threading;
@@ -48,7 +49,7 @@ namespace KubeClient
                 try
                 {
                     client = new ClientBuilder()
-                        .ConfigureCluster(options => options.ClusterId = "testcluster")
+                        .Configure<ClusterOptions>(options => options.ClusterId = "testcluster")
                         .UseKubeGatewayListProvider()
                         .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(IHello).Assembly).WithReferences())
                         .ConfigureLogging(logging => logging.AddConsole())

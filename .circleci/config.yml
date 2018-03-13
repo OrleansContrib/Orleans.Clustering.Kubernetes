@@ -23,7 +23,7 @@ jobs:
               echo NUGET_API_KEY environment variable not defined.
               exit 1
             fi
-            PACKAGE_VERSION=1.0.0-rc1-$CIRCLE_BUILD_NUM
+            PACKAGE_VERSION=1.0.0-rc2-$CIRCLE_BUILD_NUM
             dotnet pack /p:PackageVersion=$PACKAGE_VERSION -o ./PackOutput -c release --include-symbols --include-source
             dotnet nuget push src/Orleans.Clustering.Kubernetes/PackOutput/Orleans.Clustering.Kubernetes.$PACKAGE_VERSION.nupkg -k $NUGET_API_KEY -s https://www.nuget.org/api/v2/package
             print_title "git tag"

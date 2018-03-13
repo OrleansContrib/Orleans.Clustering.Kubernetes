@@ -40,7 +40,7 @@ namespace KubeSiloHost
         private static async Task<ISiloHost> StartSilo()
         {
             var builder = new SiloHostBuilder()
-                .Configure(options => options.ClusterId = "testcluster")
+                .Configure<ClusterOptions>(options => options.ClusterId = "testcluster")
                 .ConfigureEndpoints(new Random(1).Next(10001, 10100), new Random(1).Next(20001, 20100))
                 .UseKubeMembership(opt =>
                 {
