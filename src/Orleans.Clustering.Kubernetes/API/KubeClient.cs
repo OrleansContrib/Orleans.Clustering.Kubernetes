@@ -298,7 +298,7 @@ namespace Orleans.Clustering.Kubernetes.API
 
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                if (response.StatusCode == HttpStatusCode.NotFound)
+                if (response.StatusCode != HttpStatusCode.NotFound)
                 {
                     var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
