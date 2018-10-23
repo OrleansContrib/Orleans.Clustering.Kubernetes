@@ -1,5 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
-using Orleans.Configuration;
+using Microsoft.Extensions.Options;
 using Orleans.Hosting;
 using Orleans.Messaging;
 using System;
