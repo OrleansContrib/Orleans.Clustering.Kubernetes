@@ -81,6 +81,18 @@ Both gateway list and the membership provider has other options that allow you t
 
 Great! Now enjoy your Orleans application running within a Kubernetes cluster without need an external membership provider! 
 
+# Security considerations
+
+This provider behaves like any regular application being hosted on Kubernetes. That means it doesn't care about the underlying kubernetes security model. In this particular provider however, it _expect_ the pod to have access to the API server. Usually this access is granted to the service account being used by the POD (more on that check Kubernetes docs for service accounts) by enabling RBAC or whatever other authorization plugin your cluster is using.
+
+Regardless of the authorization pluging being used, ensure the following:
+
+1. If `opt.CanCreateResources == true`, your service account must be able to create CRDs on Kubernetes API server.
+2. If `opt.CanCreateResources == false`, your service account won't try to create CRDs on your Kubernetes API server, so you should be fine for the majority of cases. However, like mentioned before, somehow (i.e. by using `kubectl`) you need to deploy the CRDs (included .yml files on this repo) before you ran your Orleans application.
+3. Regardless of the value of `opt.CanCreateResources`, the service account _must_ have access to read and create objects (instances of the CRDs) on your Kubernetes API server at runtime using the Kubernetes API server endpoint created when you (regardless of how) deployed the CRDs to the cluster.
+
+PS: If for whatever reason you are proxying the connection to the API server, make sure you set the API endpoint when registering this provider. That way, your proxy will be required to have access to Kubernetes API server. All the provider needs is to have access to the proxy endpoint.
+
 # Contributions
 
 PRs and feedback are **very** welcome! This repo follows the same contributions guideline as Orleans does and github issues will have `help-wanted` topics as they are coming. 
