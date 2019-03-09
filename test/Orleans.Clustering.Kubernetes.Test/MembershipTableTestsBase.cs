@@ -401,6 +401,40 @@ namespace Orleans.Clustering.Kubernetes.Test
             Assert.True((amAliveTime - member.Item1.IAmAliveTime).Duration() < TimeSpan.FromMilliseconds(50), (amAliveTime - member.Item1.IAmAliveTime).Duration().ToString());
         }
 
+        protected async Task MembershipTable_CleanupDefunctSiloEntries(bool extendedProtocol = true)
+        {
+            MembershipTableData tableData = await this.membershipTable.ReadAll();
+
+            TableVersion newTableVersion = tableData.Version.Next();
+            MembershipEntry newEntry = CreateMembershipEntryForTest();
+            bool ok = await this.membershipTable.InsertRow(newEntry, newTableVersion);
+            Assert.True(ok);
+            
+            var amAliveTime = DateTime.UtcNow;
+
+            // This mimics the arguments MembershipOracle.OnIAmAliveUpdateInTableTimer passes in
+            var entry = new MembershipEntry
+            {
+                SiloAddress = newEntry.SiloAddress,
+                IAmAliveTime = amAliveTime
+            };
+
+            await this.membershipTable.UpdateIAmAlive(entry);
+
+            tableData = await this.membershipTable.ReadAll();
+            Tuple<MembershipEntry, string> member = tableData.Members.First();
+            // compare that the value is close to what we passed in, but not exactly, as the underlying store can set its own precision settings
+            // (ie: in SQL Server this is defined as datetime2(3), so we don't expect precision to account for less than 0.001s values)
+            Assert.True((amAliveTime - member.Item1.IAmAliveTime).Duration() < TimeSpan.FromMilliseconds(50), (amAliveTime - member.Item1.IAmAliveTime).Duration().ToString());
+
+            await Task.Delay(1000);
+
+            await this.membershipTable.CleanupDefunctSiloEntries(DateTimeOffset.UtcNow);
+
+            tableData = await this.membershipTable.ReadAll();
+            Assert.Empty(tableData.Members);
+        }
+
         private static int generation;
 
 
