@@ -49,7 +49,11 @@ namespace KubeClient
                 try
                 {
                     client = new ClientBuilder()
-                        .Configure<ClusterOptions>(options => options.ClusterId = "testcluster")
+                        .Configure<ClusterOptions>(options =>
+                        {
+                            options.ClusterId = "testcluster"; // Must be lowercase
+                            options.ServiceId = "hello";
+                        })
                         .UseKubeGatewayListProvider()
                         .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(IHello).Assembly).WithReferences())
                         .ConfigureLogging(logging => logging.AddConsole())
