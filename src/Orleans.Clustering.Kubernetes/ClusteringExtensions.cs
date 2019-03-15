@@ -29,6 +29,27 @@ namespace Orleans.Clustering.Kubernetes
             });
         }
 
+        public static ISiloBuilder UseKubeMembership(this ISiloBuilder builder,
+            Action<KubeClusteringOptions> configureOptions)
+        {
+            return builder.ConfigureServices(services => services.UseKubeMembership(configureOptions));
+        }
+
+        public static ISiloBuilder UseKubeMembership(this ISiloBuilder builder,
+            Action<OptionsBuilder<KubeClusteringOptions>> configureOptions)
+        {
+            return builder.ConfigureServices(services => services.UseKubeMembership(configureOptions));
+        }
+
+        public static ISiloBuilder UseKubeMembership(this ISiloBuilder builder)
+        {
+            return builder.ConfigureServices(services =>
+            {
+                services.AddOptions<KubeClusteringOptions>();
+                services.AddSingleton<IMembershipTable, KubeMembershipTable>();
+            });
+        }
+
         public static IClientBuilder UseKubeGatewayListProvider(this IClientBuilder builder, Action<KubeGatewayOptions> configureOptions)
         {
             return builder.ConfigureServices(services => services.UseKubeGatewayListProvider(configureOptions));

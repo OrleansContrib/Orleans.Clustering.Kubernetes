@@ -57,6 +57,20 @@ namespace Orleans.Clustering.Kubernetes
             }
         }
 
+        public async Task CleanupDefunctSiloEntries(DateTimeOffset beforeDate)
+        {
+            var silos = await GetSilos();
+
+            foreach (var silo in silos)
+            {
+                if (silo.Status == SiloStatus.Dead && silo.IAmAliveTime < beforeDate)
+                {
+                    await this._kubeClient.DeleteCustomObject(silo.Metadata.Name,
+                        PROVIDER_MODEL_VERSION, SiloEntity.PLURAL);
+                }
+            }
+        }
+
         public async Task DeleteMembershipTableEntries(string clusterId)
         {
             var clusterVersion = await GetClusterVersion();
