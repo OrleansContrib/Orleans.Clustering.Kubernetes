@@ -538,5 +538,25 @@ namespace Orleans.Clustering.Kubernetes
         }
 
         private static string ConstructSiloEntityId(SiloAddress silo) => $"{silo.Endpoint.Address}-{silo.Endpoint.Port}-{silo.Generation}";
+
+        public async Task CleanupDefunctSiloEntries(DateTimeOffset beforeDate)
+        {
+            var allSilos = await this.GetSilos();
+            if (allSilos.Count == 0) return;
+
+            var toDelete = allSilos.Where(s => s.Status == SiloStatus.Dead && s.IAmAliveTime < beforeDate);
+            var tasks = new List<Task>();
+
+
+            foreach (var deadSilo in toDelete)
+            {
+                tasks.Add(
+                    this._kubeClient.DeleteCustomObject(deadSilo.Metadata.Name,
+                              PROVIDER_MODEL_VERSION, SiloEntity.PLURAL)
+                );
+            }
+
+            await Task.WhenAll(tasks);
+        }
     }
 }
