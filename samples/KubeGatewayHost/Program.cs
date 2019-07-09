@@ -40,7 +40,7 @@ namespace KubeGatewayHost
         private static async Task<ISiloHost> StartSilo()
         {
             var builder = new SiloHostBuilder()
-                .Configure<ClusterOptions>(options => options.ClusterId = "testcluster" )
+                .Configure<ClusterOptions>(options =>  { options.ClusterId = "testcluster"; options.ServiceId = "testservice"; })
                 .ConfigureEndpoints(new Random(1).Next(30001, 30100), new Random(1).Next(20001, 20100), listenOnAnyHostAddress: true)
                 .AddMemoryGrainStorageAsDefault()
                 .UseKubeMembership(opt =>
