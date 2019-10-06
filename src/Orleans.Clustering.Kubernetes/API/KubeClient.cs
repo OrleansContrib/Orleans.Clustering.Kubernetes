@@ -57,7 +57,8 @@ namespace Orleans.Clustering.Kubernetes.API
         private readonly string _namespace;
         private readonly string _group;
         private readonly HttpClient _client;
-        private readonly X509Certificate2 _rootCertificate;
+
+        internal X509Certificate2 RootCertificate { get; }
 
         public KubeClient(ILoggerFactory loggerFactory, HttpClientHandler httpClientHandler = null, string apiEndpoint = null, string group = null, string apiToken = null, string certificate = null)
         {
@@ -80,9 +81,9 @@ namespace Orleans.Clustering.Kubernetes.API
 
             var endpointUri = new Uri(string.IsNullOrWhiteSpace(apiEndpoint) ? IN_CLUSTER_KUBE_ENDPOINT : apiEndpoint);
 
-            var certificateData = default(string);
+            var certificateData = certificate;
 
-            if (string.IsNullOrWhiteSpace(certificate))
+            if (string.IsNullOrWhiteSpace(certificateData))
             {
                 var rootCertificateFilePath = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_ROOTCA_FILENAME);
 
@@ -104,7 +105,7 @@ namespace Orleans.Clustering.Kubernetes.API
                     .Replace(RETURN_CHAR, string.Empty)
                     .Replace(NEWLINE_CHAR, string.Empty);
 
-                this._rootCertificate = new X509Certificate2(Convert.FromBase64String(certificateData));
+                this.RootCertificate = new X509Certificate2(Convert.FromBase64String(certificateData));
             }
 
             var handler = httpClientHandler;
@@ -114,7 +115,7 @@ namespace Orleans.Clustering.Kubernetes.API
                 handler = new HttpClientHandler();
 
                 // If the base url is a secure one, install a certificate handler if we've a root certificate configured.
-                if (endpointUri.Scheme == "https" && this._rootCertificate != null)
+                if (endpointUri.Scheme == "https" && this.RootCertificate != null)
                 {
                     handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, serverCertificate, chain, sslPolicyErrors) =>
                          {
@@ -130,7 +131,7 @@ namespace Orleans.Clustering.Kubernetes.API
                                  chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
 
                                  // add all your extra certificate chain
-                                 chain.ChainPolicy.ExtraStore.Add(this._rootCertificate);
+                                 chain.ChainPolicy.ExtraStore.Add(this.RootCertificate);
                                  chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
 
                                  var isValid = chain.Build(serverCertificate);
