@@ -11,16 +11,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      - uses: engineerd/setup-kind@v0.3.0
-        with:
-          config: .github/workflows/kind.yml
-      - name: Setup Kube API
-        run: kubectl proxy &
+      # - uses: engineerd/setup-kind@v0.3.0
+      #   with:
+      #     config: .github/workflows/kind.yml
+      # - name: Setup Kube API
+      #   run: kubectl proxy &
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
         with:
           dotnet-version: 3.1.100
       - name: Build
         run: dotnet build --configuration Release
-      - name: Test
-        run: dotnet test --configuration Release --no-build
+      # - name: Test
+      #   run: dotnet test --configuration Release --no-build
