@@ -48,7 +48,7 @@ namespace Orleans.Clustering.Kubernetes.Test
             //fixture.InitializeConnectionStringAccessor(GetConnectionString);
             //this.connectionString = fixture.ConnectionString;
             this.clusterOptions = Options.Create(new ClusterOptions { ClusterId = this.clusterId });
-           
+
             var adoVariant = GetAdoInvariant();
 
             this.membershipTable = CreateMembershipTable(this.logger);
@@ -153,6 +153,44 @@ namespace Orleans.Clustering.Kubernetes.Test
                 Assert.Equal(1, data.Version.Version);
 
             Assert.Equal(1, data.Members.Count);
+        }
+
+        protected async Task MembershipTable_CleanUp(bool extendedProtocol = true)
+        {
+            SiloAddress siloAddress = CreateSiloAddressForTest();
+
+            var membershipEntry = new MembershipEntry
+            {
+                SiloAddress = siloAddress,
+                HostName = hostName,
+                SiloName = "TestSiloName",
+                Status = SiloStatus.Joining,
+                ProxyPort = siloAddress.Endpoint.Port,
+                StartTime = DateTime.UtcNow.AddDays(-1),
+                IAmAliveTime = DateTime.UtcNow.AddHours(-1)
+            };
+
+            var data = await this.membershipTable.ReadAll();
+            Assert.NotNull(data);
+            Assert.Equal(0, data.Members.Count);
+
+            TableVersion nextTableVersion = data.Version.Next();
+            membershipEntry.Status = SiloStatus.Dead;
+            bool ok = await this.membershipTable.InsertRow(membershipEntry, nextTableVersion);
+            Assert.True(ok, "InsertRow failed");
+
+            data = await this.membershipTable.ReadAll();
+
+            if (extendedProtocol)
+                Assert.Equal(1, data.Version.Version);
+
+            Assert.Equal(1, data.Members.Count);
+
+            await this.membershipTable.CleanupDefunctSiloEntries(DateTimeOffset.UtcNow);
+
+            data = await this.membershipTable.ReadAll();
+
+            Assert.Equal(0, data.Members.Count);
         }
 
         protected async Task MembershipTable_ReadRow_Insert_Read(bool extendedProtocol = true)
@@ -425,7 +463,7 @@ namespace Orleans.Clustering.Kubernetes.Test
 
         private static DateTime GetUtcNowWithSecondsResolution()
         {
-            var now = DateTime.UtcNow;
+            var now = DateTimeOffset.UtcNow;
             return new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second);
         }
 

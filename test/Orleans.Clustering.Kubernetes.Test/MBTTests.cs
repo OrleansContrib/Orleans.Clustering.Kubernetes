@@ -95,4 +95,10 @@ public class KubeTests : MembershipTableTestsBase/*, IClassFixture<AzureStorageB
     {
         await MembershipTable_UpdateIAmAlive();
     }
+
+    [Fact]
+    public async Task CleanUpdDeadSilos()
+    {
+        await MembershipTable_CleanUp();
+    }
 }

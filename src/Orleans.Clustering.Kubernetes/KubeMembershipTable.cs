@@ -547,7 +547,6 @@ namespace Orleans.Clustering.Kubernetes
             var toDelete = allSilos.Where(s => s.Status == SiloStatus.Dead && s.IAmAliveTime < beforeDate);
             var tasks = new List<Task>();
 
-
             foreach (var deadSilo in toDelete)
             {
                 tasks.Add(
