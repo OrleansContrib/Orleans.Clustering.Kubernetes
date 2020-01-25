@@ -14,6 +14,8 @@ jobs:
       - uses: engineerd/setup-kind@v0.3.0
         with:
           config: .github/workflows/kind.yml
+      - name: Setup Kube API
+        run: kubectl proxy &
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
         with:
