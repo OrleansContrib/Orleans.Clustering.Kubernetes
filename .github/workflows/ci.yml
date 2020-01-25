@@ -11,6 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
+      - uses: engineerd/setup-kind@v0.3.0
       - name: Setup .NET Core
         uses: actions/setup-dotnet@v1
         with:
