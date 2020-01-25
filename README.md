@@ -3,8 +3,7 @@
   <h1>Orleans Clustering Provider for Kubernetes</h1>
 </p>
 
-
-[![CircleCI](https://circleci.com/gh/OrleansContrib/Orleans.Clustering.Kubernetes.svg?style=svg)](https://circleci.com/gh/OrleansContrib/Orleans.Clustering.Kubernetes)
+[![CI](https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes/workflows/CI/badge.svg)](https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes/actions)
 [![NuGet](https://img.shields.io/nuget/v/Orleans.Clustering.Kubernetes.svg?style=flat)](http://www.nuget.org/packages/Orleans.Clustering.Kubernetes)
 
 [Orleans](https://github.com/dotnet/orleans) is a framework that provides a straight-forward approach to building distributed high-scale computing applications, without the need to learn and apply complex concurrency or other scaling patterns. 
