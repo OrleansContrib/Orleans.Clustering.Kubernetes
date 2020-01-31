@@ -16,7 +16,7 @@
     <PackageIconUrl>https://raw.githubusercontent.com/dotnet/orleans/gh-pages/assets/logo_128.png</PackageIconUrl>
     <PackageTags>Orleans Cloud-Computing Actor-Model Actors Distributed-Systems Azure Kubernetes C# .NET</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <RepositoryUrl>https://github.com/OrleansContrib/Orleans.CosmosDB</RepositoryUrl>
+    <RepositoryUrl>https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <IncludeSymbols>true</IncludeSymbols>
     <IncludeSource>true</IncludeSource>
