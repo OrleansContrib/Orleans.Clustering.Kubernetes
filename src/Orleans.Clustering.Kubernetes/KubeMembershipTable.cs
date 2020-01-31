@@ -166,7 +166,7 @@ namespace Orleans.Clustering.Kubernetes
             }
             catch (Exception exc)
             {
-                this._logger?.LogWarning(exc, $"Failure reading all silo entries for cluster id {this._clusterOptions.ClusterId}");
+                this._logger?.LogWarning(exc, "Failure reading all silo entries for cluster id {clusterId}", this._clusterOptions.ClusterId);
 
                 throw;
             }
@@ -209,7 +209,7 @@ namespace Orleans.Clustering.Kubernetes
             }
             catch (Exception exc)
             {
-                this._logger?.LogError(exc, $"Failure reading silo entry {name} for cluster id {this._clusterOptions.ClusterId}.");
+                this._logger?.LogError(exc, "Failure reading silo entry {name} for cluster id {clusterId}.", name, this._clusterOptions.ClusterId);
 
                 throw;
             }
@@ -235,7 +235,7 @@ namespace Orleans.Clustering.Kubernetes
             }
             catch (Exception exc)
             {
-                this._logger?.LogError(exc, $"Unable to update Silo Entry {name}.");
+                this._logger?.LogError(exc, "Unable to update Silo Entry {name}.", name);
 
                 throw;
             }
@@ -370,12 +370,12 @@ namespace Orleans.Clustering.Kubernetes
 
                     if (created != null)
                     {
-                        this._logger?.Info($"Created new Cluster Version entity for Cluster {this._clusterOptions.ClusterId}.");
+                        this._logger?.Info("Created new Cluster Version entity for Cluster {clusterId}.", this._clusterOptions.ClusterId);
                     }
                 }
                 else
                 {
-                    this._logger?.Info($"Cluster {this._clusterOptions.ClusterId} already exist. Trying to join it.");
+                    this._logger?.Info("Cluster {clusterId} already exists. Trying to join it.", this._clusterOptions.ClusterId);
                 }
             }
             catch (Exception exc)
