@@ -68,7 +68,7 @@ namespace Orleans.Clustering.Kubernetes.API
 
             if (!File.Exists(namespaceFilePath))
             {
-                this._logger?.LogWarning($"Namespace file {namespaceFilePath} wasn't found. Are we running in a pod? If you are running unit tests outside a pod, please create the test namespace '{ORLEANS_NAMESPACE}'.");
+                this._logger?.LogWarning("Namespace file {namespaceFilePath} wasn't found. Are we running in a pod? If you are running unit tests outside a pod, please create the test namespace '{namespace}'.", namespaceFilePath, ORLEANS_NAMESPACE);
 
                 this._namespace = ORLEANS_NAMESPACE;
             }
@@ -93,7 +93,7 @@ namespace Orleans.Clustering.Kubernetes.API
                 }
                 else
                 {
-                    this._logger?.LogWarning($"Root Certificate file {rootCertificateFilePath} wasn't found, no certificate will be used.");
+                    this._logger?.LogWarning("Root Certificate file {rootCertificateFilePath} wasn't found, no certificate will be used.", rootCertificateFilePath);
                 }
             }
 
@@ -163,7 +163,7 @@ namespace Orleans.Clustering.Kubernetes.API
                 }
                 else
                 {
-                    this._logger?.LogWarning($"Token file {tokenFilePath} wasn't found, no API token will be used.");
+                    this._logger?.LogWarning("Token file {tokenFilePath} wasn't found, no API token will be used.", tokenFilePath);
                 }
             }
 
@@ -190,7 +190,7 @@ namespace Orleans.Clustering.Kubernetes.API
                 {
                     var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                    this._logger?.LogError($"Failure listing CRDs: {error}");
+                    this._logger?.LogError("Failure listing CRDs: {error}", error);
                 }
 
                 return _emptyCustomResourceDefinitionList;
@@ -216,7 +216,7 @@ namespace Orleans.Clustering.Kubernetes.API
             {
                 var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                this._logger?.LogError($"Failure creating CRD: {error}");
+                this._logger?.LogError("Failure creating CRD: {error}", error);
 
                 return null;
             }
@@ -237,7 +237,7 @@ namespace Orleans.Clustering.Kubernetes.API
             {
                 var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                this._logger?.LogError($"Failure deleting CRD: {error}");
+                this._logger?.LogError("Failure deleting CRD: {error}", error);
 
                 return;
             }
@@ -263,7 +263,7 @@ namespace Orleans.Clustering.Kubernetes.API
             {
                 var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                this._logger?.LogError($"Failure creating Custom Object: {error}");
+                this._logger?.LogError("Failure creating Custom Object: {error}", error);
 
                 return null;
             }
@@ -284,7 +284,7 @@ namespace Orleans.Clustering.Kubernetes.API
             {
                 var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                this._logger?.LogError($"Failure deleting Custom Object: {error}");
+                this._logger?.LogError("Failure deleting Custom Object: {error}", error);
 
                 return;
             }
@@ -303,7 +303,7 @@ namespace Orleans.Clustering.Kubernetes.API
                 {
                     var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                    this._logger?.LogError($"Failure getting Custom Object: {error}");
+                    this._logger?.LogError("Failure getting Custom Object: {error}", error);
                 }
 
                 return null;
@@ -329,7 +329,7 @@ namespace Orleans.Clustering.Kubernetes.API
                 {
                     var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                    this._logger?.LogError($"Failure listing Custom Object: {error}");
+                    this._logger?.LogError("Failure listing Custom Object: {error}", error);
                 }
 
                 return new List<TObject>();
@@ -359,7 +359,7 @@ namespace Orleans.Clustering.Kubernetes.API
             {
                 var error = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                this._logger?.LogError($"Failure updating Custom Object: {error}");
+                this._logger?.LogError("Failure updating Custom Object: {error}", error);
 
                 return null;
             }
