@@ -82,6 +82,7 @@ namespace Orleans.Clustering.Kubernetes.API
             var endpointUri = new Uri(string.IsNullOrWhiteSpace(apiEndpoint) ? IN_CLUSTER_KUBE_ENDPOINT : apiEndpoint);
 
             var certificateData = certificate;
+            var isCertificateLoaded = false;
 
             if (string.IsNullOrWhiteSpace(certificateData))
             {
@@ -89,7 +90,9 @@ namespace Orleans.Clustering.Kubernetes.API
 
                 if (File.Exists(rootCertificateFilePath))
                 {
-                    certificateData = File.ReadAllText(rootCertificateFilePath);
+                    this.RootCertificate = new X509Certificate2(rootCertificateFilePath);
+                    isCertificateLoaded = true;
+
                 }
                 else
                 {
@@ -97,7 +100,7 @@ namespace Orleans.Clustering.Kubernetes.API
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(certificateData))
+            if (!isCertificateLoaded && !string.IsNullOrWhiteSpace(certificateData))
             {
                 certificateData = certificateData
                     .Replace(BEGIN_CERT_LINE, string.Empty)
