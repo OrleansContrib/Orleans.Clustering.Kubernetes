@@ -64,52 +64,13 @@ namespace Orleans.Clustering.Kubernetes.API
         {
             this._logger = loggerFactory?.CreateLogger<KubeClient>();
 
-            var namespaceFilePath = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_NAMESPACE_FILENAME);
+            this._namespace = this.GetNamespace();
 
-            if (!File.Exists(namespaceFilePath))
-            {
-                this._logger?.LogWarning("Namespace file {namespaceFilePath} wasn't found. Are we running in a pod? If you are running unit tests outside a pod, please create the test namespace '{namespace}'.", namespaceFilePath, ORLEANS_NAMESPACE);
-
-                this._namespace = ORLEANS_NAMESPACE;
-            }
-            else
-            {
-                this._namespace = File.ReadAllText(namespaceFilePath);
-            }
+            this.RootCertificate = this.GetRootCertificate(certificate);
 
             this._group = string.IsNullOrWhiteSpace(group) ? ORLEANS_GROUP : group.ToLowerInvariant();
 
             var endpointUri = new Uri(string.IsNullOrWhiteSpace(apiEndpoint) ? IN_CLUSTER_KUBE_ENDPOINT : apiEndpoint);
-
-            var certificateData = certificate;
-            var isRootCertificateLoaded = false;
-
-            if (string.IsNullOrWhiteSpace(certificateData))
-            {
-                var rootCertificateFilePath = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_ROOTCA_FILENAME);
-
-                if (File.Exists(rootCertificateFilePath))
-                {
-                    this.RootCertificate = new X509Certificate2(rootCertificateFilePath);
-                    isRootCertificateLoaded = true;
-
-                }
-                else
-                {
-                    this._logger?.LogWarning("Root Certificate file {rootCertificateFilePath} wasn't found, no certificate will be used.", rootCertificateFilePath);
-                }
-            }
-
-            if (!isRootCertificateLoaded && !string.IsNullOrWhiteSpace(certificateData))
-            {
-                certificateData = certificateData
-                    .Replace(BEGIN_CERT_LINE, string.Empty)
-                    .Replace(END_CERT_LINE, string.Empty)
-                    .Replace(RETURN_CHAR, string.Empty)
-                    .Replace(NEWLINE_CHAR, string.Empty);
-
-                this.RootCertificate = new X509Certificate2(Convert.FromBase64String(certificateData));
-            }
 
             var handler = httpClientHandler;
 
@@ -376,5 +337,46 @@ namespace Orleans.Clustering.Kubernetes.API
         }
 
         #endregion
+
+        private string GetNamespace()
+        {
+            var namespaceFilePath = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_NAMESPACE_FILENAME);
+            if (File.Exists(namespaceFilePath))
+            {
+                return File.ReadAllText(namespaceFilePath);
+            }
+
+            this._logger?.LogWarning(
+                "Namespace file {namespaceFilePath} wasn't found. Are we running in a pod? If you are running unit tests outside a pod, please create the test namespace '{namespace}'.",
+                namespaceFilePath, ORLEANS_NAMESPACE);
+
+            return ORLEANS_NAMESPACE;
+        }
+
+        private X509Certificate2 GetRootCertificate(string certificateData)
+        {
+            if (!string.IsNullOrWhiteSpace(certificateData))
+            {
+                var certificate = certificateData
+                    .Replace(BEGIN_CERT_LINE, string.Empty)
+                    .Replace(END_CERT_LINE, string.Empty)
+                    .Replace(RETURN_CHAR, string.Empty)
+                    .Replace(NEWLINE_CHAR, string.Empty);
+
+                return new X509Certificate2(Convert.FromBase64String(certificate));
+            }
+
+            var rootCertificateFilePath = Path.Combine(SERVICE_ACCOUNT_PATH, SERVICE_ACCOUNT_ROOTCA_FILENAME);
+            if (File.Exists(rootCertificateFilePath))
+            {
+                return new X509Certificate2(rootCertificateFilePath);
+            }
+
+            this._logger?.LogWarning(
+                "Root Certificate file {rootCertificateFilePath} wasn't found, no certificate will be used.",
+                rootCertificateFilePath);
+
+            return null;
+        }
     }
 }
