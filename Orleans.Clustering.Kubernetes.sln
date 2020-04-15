@@ -7,7 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
-		.circleci\config.yml = .circleci\config.yml
 		README.md = README.md
 		README.Nuget.md = README.Nuget.md
 		swagger.json = swagger.json
@@ -26,15 +25,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{ECE9
 		samples\README.md = samples\README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld.Interfaces", "samples\HelloWorld.Interfaces\HelloWorld.Interfaces.csproj", "{0757CEE9-FC17-4C4E-AACB-926656223C6C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloWorld.Interfaces", "samples\HelloWorld.Interfaces\HelloWorld.Interfaces.csproj", "{0757CEE9-FC17-4C4E-AACB-926656223C6C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld.Grains", "samples\HelloWorld.Grains\HelloWorld.Grains.csproj", "{AF1495DD-6C4F-4EAF-9496-2EEED43F5C92}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HelloWorld.Grains", "samples\HelloWorld.Grains\HelloWorld.Grains.csproj", "{AF1495DD-6C4F-4EAF-9496-2EEED43F5C92}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KubeSiloHost", "samples\KubeSiloHost\KubeSiloHost.csproj", "{812075AE-1A90-4AA5-8E34-BFD816487A76}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeSiloHost", "samples\KubeSiloHost\KubeSiloHost.csproj", "{812075AE-1A90-4AA5-8E34-BFD816487A76}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KubeClient", "samples\KubeClient\KubeClient.csproj", "{0FDF2DA4-B23A-43CA-8B41-E85B513AC148}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeClient", "samples\KubeClient\KubeClient.csproj", "{0FDF2DA4-B23A-43CA-8B41-E85B513AC148}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KubeGatewayHost", "samples\KubeGatewayHost\KubeGatewayHost.csproj", "{B829A386-01B2-4DF9-BDFC-71D7ECF80569}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KubeGatewayHost", "samples\KubeGatewayHost\KubeGatewayHost.csproj", "{B829A386-01B2-4DF9-BDFC-71D7ECF80569}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
