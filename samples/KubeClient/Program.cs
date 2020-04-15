@@ -5,6 +5,7 @@ using Orleans.Clustering.Kubernetes;
 using Orleans.Configuration;
 using Orleans.Runtime;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -77,11 +78,17 @@ namespace KubeClient
         private static async Task DoClientWork(IClusterClient client)
         {
             var friend = client.GetGrain<IHello>(0);
-            for (int i = 0; i < 10; i++)
+            Stopwatch watch = new Stopwatch();
+            int iterations = 1000;
+            for (int i = 0; i < iterations; i++)
             {
+                if (i > 0) watch.Start();
                 var response = await friend.SayHello("Good morning, my friend!");
-                Console.WriteLine("\n\n{0}\n\n", response);
+                if (i > 0) watch.Stop();
+                Console.WriteLine("{1}: {0}", i, response);
             }
+            
+            Console.WriteLine("KubeClient test is completed, avg time = {0:G4} milliseconds.", (double)watch.ElapsedTicks / (1000000.0 * iterations));
         }
 
         private static void OnExit(object sender, ConsoleCancelEventArgs args)
