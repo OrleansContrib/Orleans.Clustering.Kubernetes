@@ -52,7 +52,6 @@ namespace KubeClient
                     client = new ClientBuilder()
                         .Configure<ClusterOptions>(options =>  { options.ClusterId = "testcluster"; options.ServiceId = "testservice"; })
                         .UseKubeGatewayListProvider()
-                        .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(IHello).Assembly).WithReferences())
                         .ConfigureLogging(logging => logging.AddConsole())
                         .Build();
 
