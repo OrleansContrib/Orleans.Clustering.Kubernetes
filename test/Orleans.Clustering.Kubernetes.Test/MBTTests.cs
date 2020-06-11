@@ -1,3 +1,4 @@
+using k8s;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans;
@@ -28,25 +29,19 @@ public class KubeTests : MembershipTableTestsBase/*, IClassFixture<AzureStorageB
 
     protected override IMembershipTable CreateMembershipTable(ILogger logger)
     {
-        //TestUtils.CheckForAzureStorage();
-        var options = new KubeClusteringOptions()
-        {
-            APIEndpoint = "http://localhost:8001",
-            CanCreateResources = true,
-            DropResourcesOnInit = true,
-            Group = "test.test"
-        };
-        return new KubeMembershipTable(this.loggerFactory, Options.Create(new ClusterOptions { ClusterId = this.clusterId }), Options.Create(options));
+        return new KubeMembershipTable(this.loggerFactory, Options.Create(new ClusterOptions { ClusterId = this.clusterId }), new k8s.Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigFile()));
     }
 
     protected override IGatewayListProvider CreateGatewayListProvider(ILogger logger)
     {
-        var options = new KubeGatewayOptions()
-        {
-            APIEndpoint = "http://localhost:8001",
-            Group = "test.test"
-        };
-        return new KubeGatewayListProvider(this.loggerFactory, Options.Create(options), Options.Create(new ClusterOptions { ClusterId = this.clusterId }), Options.Create(new GatewayOptions()));
+        var options = new KubeGatewayOptions();
+        return new KubeGatewayListProvider(
+            this.loggerFactory,
+            Options.Create(new ClusterOptions { ClusterId = this.clusterId }),
+            Options.Create(new GatewayOptions()),
+            Options.Create(options),
+            new k8s.Kubernetes(KubernetesClientConfiguration.BuildConfigFromConfigFile())
+        );
     }
 
     protected override Task<string> GetConnectionString()

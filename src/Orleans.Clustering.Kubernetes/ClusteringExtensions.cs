@@ -1,5 +1,8 @@
+using k8s;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Orleans.Configuration;
 using Orleans.Hosting;
 using Orleans.Messaging;
 using System;
@@ -8,93 +11,80 @@ namespace Orleans.Clustering.Kubernetes
 {
     public static class ClusteringExtensions
     {
-        public static ISiloBuilder UseKubeMembership(this ISiloBuilder builder,
-            Action<KubeClusteringOptions> configureOptions)
-        {
-            return builder.ConfigureServices(services => services.UseKubeMembership(configureOptions));
-        }
 
-        public static ISiloBuilder UseKubeMembership(this ISiloBuilder builder,
-            Action<OptionsBuilder<KubeClusteringOptions>> configureOptions)
+        public static ISiloHostBuilder UseKubeMembership(this ISiloHostBuilder builder)
         {
-            return builder.ConfigureServices(services => services.UseKubeMembership(configureOptions));
+            return builder.ConfigureServices((ctx, services) =>
+            {
+                KubernetesClientConfiguration config = default;
+
+                if (KubernetesClientConfiguration.IsInCluster())
+                {
+                    config = KubernetesClientConfiguration.InClusterConfig();
+                }
+                else
+                {
+                    config = KubernetesClientConfiguration.BuildDefaultConfig();
+                }
+
+                services.AddSingleton<IMembershipTable>(sp => new KubeMembershipTable(
+                    sp.GetRequiredService<ILoggerFactory>(),
+                    sp.GetRequiredService<IOptions<ClusterOptions>>(),
+                    new k8s.Kubernetes(config)
+                ));
+            });
         }
 
         public static ISiloBuilder UseKubeMembership(this ISiloBuilder builder)
         {
-            return builder.ConfigureServices(services =>
+            return builder.ConfigureServices((ctx, services) =>
             {
-                services.AddOptions<KubeClusteringOptions>();
-                services.AddSingleton<IMembershipTable, KubeMembershipTable>();
+                KubernetesClientConfiguration config = default;
+
+                if (KubernetesClientConfiguration.IsInCluster())
+                {
+                    config = KubernetesClientConfiguration.InClusterConfig();
+                }
+                else
+                {
+                    config = KubernetesClientConfiguration.BuildDefaultConfig();
+                }
+
+                services.AddSingleton<IMembershipTable>(sp => new KubeMembershipTable(
+                    sp.GetRequiredService<ILoggerFactory>(),
+                    sp.GetRequiredService<IOptions<ClusterOptions>>(),
+                    new k8s.Kubernetes(config)
+                ));
             });
         }
 
-        public static ISiloHostBuilder UseKubeMembership(this ISiloHostBuilder builder,
-            Action<KubeClusteringOptions> configureOptions)
+        public static IClientBuilder UseKubeGatewayListProvider(this IClientBuilder builder,
+            Action<KubeGatewayOptions> configureOptions = null)
         {
-            return builder.ConfigureServices(services => services.UseKubeMembership(configureOptions));
-        }
-
-        public static ISiloHostBuilder UseKubeMembership(this ISiloHostBuilder builder,
-            Action<OptionsBuilder<KubeClusteringOptions>> configureOptions)
-        {
-            return builder.ConfigureServices(services => services.UseKubeMembership(configureOptions));
-        }
-
-        public static ISiloHostBuilder UseKubeMembership(this ISiloHostBuilder builder)
-        {
-            return builder.ConfigureServices(services =>
-            {
-                services.AddOptions<KubeClusteringOptions>();
-                services.AddSingleton<IMembershipTable, KubeMembershipTable>();
-            });
-        }
-
-        public static IClientBuilder UseKubeGatewayListProvider(this IClientBuilder builder, Action<KubeGatewayOptions> configureOptions)
-        {
-            return builder.ConfigureServices(services => services.UseKubeGatewayListProvider(configureOptions));
-        }
-
-        public static IClientBuilder UseKubeGatewayListProvider(this IClientBuilder builder)
-        {
-            return builder.ConfigureServices(services =>
+            return builder.ConfigureServices((ctx, services) =>
             {
                 services.AddOptions<KubeGatewayOptions>();
-                services.AddSingleton<IGatewayListProvider, KubeGatewayListProvider>();
+                services.Configure<KubeGatewayOptions>(configureOptions);
+
+                KubernetesClientConfiguration config = default;
+
+                if (KubernetesClientConfiguration.IsInCluster())
+                {
+                    config = KubernetesClientConfiguration.InClusterConfig();
+                }
+                else
+                {
+                    config = KubernetesClientConfiguration.BuildDefaultConfig();
+                }
+
+                services.AddSingleton<IGatewayListProvider>(sp => new KubeGatewayListProvider(
+                    sp.GetRequiredService<ILoggerFactory>(),
+                    sp.GetRequiredService<IOptions<ClusterOptions>>(),
+                    sp.GetRequiredService<IOptions<GatewayOptions>>(),
+                    sp.GetRequiredService<IOptions<KubeGatewayOptions>>(),
+                    new k8s.Kubernetes(config)
+                ));
             });
-        }
-
-        public static IClientBuilder UseKubeGatewayListProvider(this IClientBuilder builder, Action<OptionsBuilder<KubeGatewayOptions>> configureOptions)
-        {
-            return builder.ConfigureServices(services => services.UseKubeGatewayListProvider(configureOptions));
-        }
-
-        public static IServiceCollection UseKubeMembership(this IServiceCollection services,
-            Action<KubeClusteringOptions> configureOptions)
-        {
-            return services.UseKubeMembership(ob => ob.Configure(configureOptions));
-        }
-
-        public static IServiceCollection UseKubeMembership(this IServiceCollection services,
-            Action<OptionsBuilder<KubeClusteringOptions>> configureOptions)
-        {
-            configureOptions?.Invoke(services.AddOptions<KubeClusteringOptions>());
-
-            return services.AddSingleton<IMembershipTable, KubeMembershipTable>();
-        }
-
-        public static IServiceCollection UseKubeGatewayListProvider(this IServiceCollection services,
-            Action<KubeGatewayOptions> configureOptions)
-        {
-            return services.UseKubeGatewayListProvider(ob => ob.Configure(configureOptions));
-        }
-
-        public static IServiceCollection UseKubeGatewayListProvider(this IServiceCollection services,
-            Action<OptionsBuilder<KubeGatewayOptions>> configureOptions)
-        {
-            configureOptions?.Invoke(services.AddOptions<KubeGatewayOptions>());
-
-            return services.AddSingleton<IGatewayListProvider, KubeGatewayListProvider>();
         }
     }
 }

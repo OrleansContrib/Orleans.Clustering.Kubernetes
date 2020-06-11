@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Newtonsoft.Json;
 
 namespace Orleans.Clustering.Kubernetes.Models
@@ -11,11 +12,17 @@ namespace Orleans.Clustering.Kubernetes.Models
         public const string SINGULAR = "clusterversion";
 
         [JsonIgnore]
-        public const string SHORT_NAME = "ocv";
+        public static readonly List<string> SHORT_NAME = new List<string> { "ocv", "oc" };
 
         [JsonIgnore]
         public const string KIND = "OrleansClusterVersion";
 
+        [JsonProperty("clusterVersion")]
         public int ClusterVersion { get; set; } = 0;
+
+        public ClusterVersionEntity()
+        {
+            Kind = KIND;
+        }
     }
 }

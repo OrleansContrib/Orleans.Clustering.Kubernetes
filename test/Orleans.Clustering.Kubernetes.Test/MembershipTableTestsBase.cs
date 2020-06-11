@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Orleans.Configuration;
 using Orleans.Messaging;
@@ -41,6 +42,7 @@ namespace Orleans.Clustering.Kubernetes.Test
             //loggerFactory = TestingUtils.CreateDefaultLoggerFactory($"{this.GetType()}.log", filters);
             //logger = loggerFactory.CreateLogger(this.GetType().FullName);
 
+            this.logger = NullLogger.Instance;
             this.clusterId = "test-" + Guid.NewGuid();
 
             this.logger?.Info("ClusterId={clusterId}", this.clusterId);

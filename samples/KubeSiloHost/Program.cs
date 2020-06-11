@@ -42,14 +42,7 @@ namespace KubeSiloHost
             var builder = new SiloHostBuilder()
                 .Configure<ClusterOptions>(options =>  { options.ClusterId = "testcluster"; options.ServiceId = "testservice"; })
                 .ConfigureEndpoints(new Random(1).Next(10001, 10100), new Random(1).Next(20001, 20100))
-                .UseKubeMembership(opt =>
-                {
-                    //opt.APIEndpoint = "http://localhost:8001";
-                    //opt.CertificateData = "test";
-                    //opt.APIToken = "test";
-                    opt.CanCreateResources = true;
-                    opt.DropResourcesOnInit = true;
-                })
+                .UseKubeMembership()
                 .AddMemoryGrainStorageAsDefault()
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(HelloGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddConsole());

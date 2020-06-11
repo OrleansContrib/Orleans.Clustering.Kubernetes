@@ -43,12 +43,7 @@ namespace KubeGatewayHost
                 .Configure<ClusterOptions>(options =>  { options.ClusterId = "testcluster"; options.ServiceId = "testservice"; })
                 .ConfigureEndpoints(new Random(1).Next(30001, 30100), new Random(1).Next(20001, 20100), listenOnAnyHostAddress: true)
                 .AddMemoryGrainStorageAsDefault()
-                .UseKubeMembership(opt =>
-                {
-                    //opt.APIEndpoint = "http://localhost:8001";
-                    opt.CanCreateResources = true;
-                    //opt.DropResourcesOnInit = true;
-                })
+                .UseKubeMembership()
                 .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(HelloGrain).Assembly).WithReferences())
                 .ConfigureLogging(logging => logging.AddConsole());
 
