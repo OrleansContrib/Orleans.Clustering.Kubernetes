@@ -64,7 +64,10 @@ namespace Orleans.Clustering.Kubernetes
             return builder.ConfigureServices((ctx, services) =>
             {
                 services.AddOptions<KubeGatewayOptions>();
-                services.Configure<KubeGatewayOptions>(configureOptions);
+                if (configureOptions != null)
+                {
+                    services.Configure<KubeGatewayOptions>(configureOptions);
+                }
 
                 KubernetesClientConfiguration config = default;
 

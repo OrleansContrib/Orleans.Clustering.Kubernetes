@@ -12,19 +12,53 @@ This directory contains 3 projects to show a practical example of Orleans runnin
 
 1. Docker
 2. Kubernetes
-3. .Net Core 2.0 SDK
+3. .Net Core 3.1 SDK
 
 ## Running it
 
 To run it first create the Kubernetes `namespace` you will use to host the sample deployments with `kubectl create namespace <namespace>`. Take a note of the `<namespace>` used so it can be used later on.
 
+From the `samples/` directory, run the following commands to publish the .Net Core applications:
+
+1. `dotnet publish -c Release KubeClient -o output/KubeClient`
+2. `dotnet publish -c Release KubeGatewayHost -o output/KubeGatewayHost`
+3. `dotnet publish -c Release KubeSiloHost -o output/KubeSiloHost`
+
 Each project contains a regular `Dockerfile` which must be built to a Docker image just like a regular docker application.
 
-1. Publish each project using `dotnet publish -c Release -o PublishOutput`
-2. From the `PublishOutput` directory of each project, build the image with `docker build -t <imagename>:<imagetag> .` and replace `<imagename>` and `<imagetag>` with the respective project name (i.e `kubesilo`, `kubehost`, `kubeclient` for the name and `latest` for the tag) or whatever name you want.
-3. For each project run `kubectl run <servicename> --image=<imagename>:<imagetag> --namespace=<namespace> --image-pull-policy=Never`. First the silo, later the gateway then the client. Be sure to replace the `<xxx>` tags with the values used on previous steps.
+To build the images, run the following commands from the `samples/` directory:
 
-> NOTE: The reason we use `--image-pull-policy=Never` for this sample is just so Kubernetes doesn't try to pull the image from Docker Hub.
+1. `docker build -f output/KubeClient/Dockerfile -t kubeclient output/KubeClient`
+2. `docker build -f output/KubeGatewayHost/Dockerfile -t kubegateway output/KubeGatewayHost`
+3. `docker build -f output/KubeSiloHost/Dockerfile -t kubesilo output/KubeSiloHost`
+
+Now you have 3 images containing the 3 sample projects built on your local Docker image repository.
+
+In order for the provider to work properly, the CRD files must be deployed. This must be done once per Kubernetes cluster regardless of how many Orleans clusters/deployments on it.
+
+From the `samples/` directory, run the following command:
+
+1. `kubectl apply -f ../src/Orleans.Clustering.Kubernetes/Definitions/ClusterVersionCRD.yaml`
+2. `kubectl apply -f ../src/Orleans.Clustering.Kubernetes/Definitions/SiloEntryCRD.yaml`
+
+Now you need to make sure the pods can create objects using those deifnitions. To do that, the pods must run under a service account which has access to Kubernetes APIs under the scope of those objects. To deploy the samples service accounts run the following:
+
+1. `kubectl apply -f ./Definitions/Silo-ServiceAccount.yaml --namespace <namespace>`
+2. `kubectl apply -f ./Definitions/Client-ServiceAccount.yaml --namespace <namespace>`
+
+Those definitions create the a Kubernetes ClusterRole with permissions to read for the client, and read/write for the silos and also bind it to the service accounts you just created. You can modify the service account names and the way you create them on your production envinronment but be aware of the permissions required in order for this to work.
+
+Now you have all the assets deployed to your Kubernetes cluster and all you need is to create the Deployment objects with the following commands:
+
+1. `kubectl apply -f ./Definitions/Silo.yaml --namespace <namespace>`
+2. `kubectl apply -f ./Definitions/Gateway.yaml --namespace <namespace>`
+3. `kubectl apply -f ./Definitions/Client.yaml --namespace <namespace>`
+
+You are all set! You can use commands like `kubectl get pods --namespace <namespace>` and you will see the client, silo and gateway pods listed on it.
+
+To inspect the cluster objects deployed to kubertes with `kubectl get silos --namespace <namespace> -o yaml` or `kubectl get clusterversions --namespace <namespace> -o yaml` and that will return Orleans cluster membership objects in YAML (you can change to `-o json` if you like to).
+
+Enjoy!
 
 
 
