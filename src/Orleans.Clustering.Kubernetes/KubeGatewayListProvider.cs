@@ -62,9 +62,10 @@ namespace Orleans.Clustering.Kubernetes
             }
         }
 
-        public async Task InitializeGatewayListProvider()
+        public Task InitializeGatewayListProvider()
         {
-            this._namespace = await this.GetNamespace();
+            this._namespace = this.GetNamespace();
+            return Task.CompletedTask;
         }
 
         private static Uri ConvertToGatewayUri(SiloEntity gateway)
@@ -73,29 +74,16 @@ namespace Orleans.Clustering.Kubernetes
             return address.ToGatewayUri();
         }
 
-        private async ValueTask<string> GetNamespace()
+        private string GetNamespace()
         {
             if (!string.IsNullOrWhiteSpace(this._kubeGatewayOptions.Namespace)) return this._kubeGatewayOptions.Namespace;
 
             var namespaceFilePath = Path.Combine(Constants.SERVICE_ACCOUNT_PATH, Constants.SERVICE_ACCOUNT_NAMESPACE_FILENAME);
-            if (File.Exists(namespaceFilePath))
-            {
-                using var sourceStream = new FileStream(namespaceFilePath,
-                    FileMode.Open, FileAccess.Read, FileShare.Read,
-                    bufferSize: 4096, useAsync: true);
+            if (!File.Exists(namespaceFilePath)) return Constants.ORLEANS_NAMESPACE;
 
-                var sb = new StringBuilder();
+            var ns = File.ReadAllText(namespaceFilePath);
 
-                byte[] buffer = new byte[0x1000];
-                int numRead;
-                while ((numRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
-                {
-                    string text = Encoding.Unicode.GetString(buffer, 0, numRead);
-                    sb.Append(text);
-                }
-
-                return sb.ToString();
-            }
+            if (!string.IsNullOrWhiteSpace(ns)) return ns;
 
             this._logger?.LogWarning(
                 "Namespace file {namespaceFilePath} wasn't found. Are we running in a pod? If you are running unit tests outside a pod, please create the test namespace '{namespace}'.",
