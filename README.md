@@ -20,7 +20,9 @@ If you want to quickly test it, clone this repo and go to the [Samples Directory
 
 Kubernetes has multiple ways to extend its API and one of those ways allow you to easily add custom data structures to it so it can be consumed later on by applications. Those objects are called _Custom Resources_ (CRD). The objects created based on CRDs are backed by the internal [etcd](https://coreos.com/etcd/) instance part of every Kubernetes deployment.
 
-Two CRDs are created by this provider in order to store the Cluster Membership objects to comply with [Orleans Extended Cluster Membership Protocol](http://dotnet.github.io/orleans/Documentation/Runtime-Implementation-Details/Cluster-Management.html). `ClusterVersion` and `Silo`. 
+Two CRDs are created by this provider in order to store the Cluster Membership objects to comply with [Orleans Extended Cluster Membership Protocol](https://dotnet.github.io/orleans/Documentation/implementation/cluster_management.html). `ClusterVersion` and `Silo`. Examples on how to install each CRD can be found under the [samples folder](https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes/tree/master/samples).
+- [ClusterVersionCRD.yaml](https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes/blob/master/src/Orleans.Clustering.Kubernetes/Definitions/ClusterVersionCRD.yaml)
+- [SiloEntryCRD.yaml](https://github.com/OrleansContrib/Orleans.Clustering.Kubernetes/blob/master/src/Orleans.Clustering.Kubernetes/Definitions/SiloEntryCRD.yaml)
 
 Those objects can be created at startup of the first silo in the cluster or, manually created by regular `.yaml` files. The package includes the two files with the required specs for each one. They **must** be deployed into the cluster before any Orleans application is deployed with this provider.
 
