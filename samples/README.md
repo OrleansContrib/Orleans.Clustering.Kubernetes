@@ -59,6 +59,3 @@ You are all set! You can use commands like `kubectl get pods --namespace <namesp
 To inspect the cluster objects deployed to kubertes with `kubectl get silos --namespace <namespace> -o yaml` or `kubectl get clusterversions --namespace <namespace> -o yaml` and that will return Orleans cluster membership objects in YAML (you can change to `-o json` if you like to).
 
 Enjoy!
-
-
-
