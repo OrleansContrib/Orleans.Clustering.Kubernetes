@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: orleans-gateway
-    labels:
-        app: kubegateway
+  name: orleans-gateway
+  labels:
+    app: kubegateway
 spec:
-    replicas: 2
-    selector:
-        matchLabels:
-            app: kubegateway
-    template:
-        metadata:
-            labels:
-                app: kubegateway
-        spec:
-            serviceAccountName: orleanssilo
-            containers:
-                - name: orleanssilo
-                  image: kubegateway:latest
-                  imagePullPolicy: Never
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kubegateway
+  template:
+    metadata:
+      labels:
+        app: kubegateway
+    spec:
+      serviceAccountName: orleanssilo
+      containers:
+        - name: orleanssilo
+          image: kubegateway:latest
+          imagePullPolicy: Never

@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: orleans-client
-    labels:
-        app: kubeclient
+  name: orleans-client
+  labels:
+    app: kubeclient
 spec:
-    replicas: 1
-    selector:
-        matchLabels:
-            app: kubeclient
-    template:
-        metadata:
-            labels:
-                app: kubeclient
-        spec:
-            serviceAccountName: orleansclient
-            containers:
-                - name: orleansclient
-                  image: kubeclient:latest
-                  imagePullPolicy: Never
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubeclient
+  template:
+    metadata:
+      labels:
+        app: kubeclient
+    spec:
+      serviceAccountName: orleansclient
+      containers:
+        - name: orleansclient
+          image: kubeclient:latest
+          imagePullPolicy: Never
