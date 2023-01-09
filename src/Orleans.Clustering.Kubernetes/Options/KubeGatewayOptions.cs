@@ -1,7 +1,6 @@
-namespace Orleans.Clustering.Kubernetes
+namespace Orleans.Clustering.Kubernetes;
+
+public class KubeGatewayOptions
 {
-    public class KubeGatewayOptions
-    {
-        public string Namespace { get; set; }
-    }
+    public string Namespace { get; set; }
 }

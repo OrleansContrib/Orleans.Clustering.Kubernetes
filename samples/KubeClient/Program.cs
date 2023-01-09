@@ -1,92 +1,78 @@
 using HelloWorld.Interfaces;
-using Microsoft.Extensions.Logging;
 using Orleans;
 using Orleans.Clustering.Kubernetes;
 using Orleans.Configuration;
-using Orleans.Runtime;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using HelloWorld.Grains;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Orleans.Hosting;
 
-namespace KubeClient
+namespace KubeClient;
+
+/// <summary>
+/// Orleans test silo client
+/// </summary>
+public static class Program
 {
-    /// <summary>
-    /// Orleans test silo client
-    /// </summary>
-    public class Program
+    private static readonly AutoResetEvent Closing = new AutoResetEvent(false);
+
+    public static async Task<int> Main()
     {
-        private static readonly AutoResetEvent Closing = new AutoResetEvent(false);
-
-        static async Task<int> Main(string[] args)
+        try
         {
-            try
+            var builder = new HostBuilder();
+            builder.ConfigureServices(collection =>
             {
-                using (var client = await StartClientWithRetries())
-                {
-                    await DoClientWork(client);
+                collection.AddScoped<IHello, HelloGrain>();
+            });
 
-                    Console.CancelKeyPress += OnExit;
-                    Closing.WaitOne();
+            builder.UseOrleansClient(ConfigureDelegate);
+            var host = builder.Build();
+            await host.StartAsync();
 
-                    Console.WriteLine("Shutting down...");
-                }
+            var grainFactory = host.Services.GetRequiredService<IGrainFactory>();
+            await DoClientWork(grainFactory);
 
-                return 0;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                return 1;
-            }
+            Console.CancelKeyPress += OnExit;
+            Closing.WaitOne();
+
+            Console.WriteLine("Shutting down...");
+
+            return 0;
         }
-
-        private static async Task<IClusterClient> StartClientWithRetries(int initializeAttemptsBeforeFailing = 5)
+        catch (Exception e)
         {
-            int attempt = 0;
-            IClusterClient client;
-            while (true)
+            Console.WriteLine(e);
+            return 1;
+        }
+    }
+
+    private static void ConfigureDelegate(IClientBuilder builder)
+    {
+        builder
+            .Configure<ClusterOptions>(options =>
             {
-                try
-                {
-                    client = new ClientBuilder()
-                        .Configure<ClusterOptions>(options =>  { options.ClusterId = "testcluster"; options.ServiceId = "testservice"; })
-                        .UseKubeGatewayListProvider()
-                        .ConfigureApplicationParts(parts => parts.AddApplicationPart(typeof(IHello).Assembly).WithReferences())
-                        .ConfigureLogging(logging => logging.AddConsole())
-                        .Build();
+                options.ClusterId = "testcluster";
+                options.ServiceId = "testservice";
+            })
+            .UseKubeGatewayListProvider();
+    }
 
-                    await client.Connect();
-                    Console.WriteLine("Client successfully connect to silo host");
-                    break;
-                }
-                catch (SiloUnavailableException)
-                {
-                    attempt++;
-                    Console.WriteLine($"Attempt {attempt} of {initializeAttemptsBeforeFailing} failed to initialize the Orleans client.");
-                    if (attempt > initializeAttemptsBeforeFailing)
-                    {
-                        throw;
-                    }
-                    await Task.Delay(TimeSpan.FromSeconds(4));
-                }
-            }
-
-            return client;
-        }
-
-        private static async Task DoClientWork(IClusterClient client)
+    private static async Task DoClientWork(IGrainFactory client)
+    {
+        var friend = client.GetGrain<IHello>(0);
+        for (var i = 0; i < 10; i++)
         {
-            var friend = client.GetGrain<IHello>(0);
-            for (int i = 0; i < 10; i++)
-            {
-                var response = await friend.SayHello("Good morning, my friend!");
-                Console.WriteLine("\n\n{0}\n\n", response);
-            }
+            var response = await friend.SayHello("Good morning, my friend!");
+            Console.WriteLine("\n\n{0}\n\n", response);
         }
+    }
 
-        private static void OnExit(object sender, ConsoleCancelEventArgs args)
-        {
-            Closing.Set();
-        }
+    private static void OnExit(object sender, ConsoleCancelEventArgs args)
+    {
+        Closing.Set();
     }
 }
