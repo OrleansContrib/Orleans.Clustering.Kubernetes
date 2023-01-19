@@ -22,7 +22,7 @@ jobs:
     - name: Push
       working-directory: src/Orleans.Clustering.Kubernetes/bin/Release
       run: |
-        dotnet nuget push Orleans.Clustering.Kubernetes.*.nupkg -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
+        dotnet nuget push Orleans.Clustering.Kubernetes.*.nupkg --skip-duplicate -k ${{ secrets.NUGET_KEY }} -s https://api.nuget.org/v3/index.json
     - name: Create Release
       uses: actions/create-release@master
       env:
