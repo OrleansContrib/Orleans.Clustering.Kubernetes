@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Orleans.Clustering.Kubernetes.Models;
 
@@ -17,7 +17,7 @@ internal class ClusterVersionEntity : BaseEntity
     [JsonIgnore]
     public const string KIND = "OrleansClusterVersion";
 
-    [JsonProperty("clusterVersion")]
+    [JsonPropertyName("clusterVersion")]
     public int ClusterVersion { get; set; } = 0;
 
     public ClusterVersionEntity()

@@ -2,7 +2,6 @@ using k8s;
 using k8s.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using Orleans.Clustering.Kubernetes.Models;
 using Orleans.Configuration;
 using Orleans.Runtime;
@@ -11,6 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Rest;
 
@@ -81,13 +81,13 @@ internal class KubeMembershipTable : IMembershipTable
 
             try
             {
-                existentSiloEntry = ((JObject)await this._kubeClient.GetNamespacedCustomObjectAsync(
+                existentSiloEntry = ((JsonElement) await this._kubeClient.GetNamespacedCustomObjectAsync(
                     Constants.ORLEANS_GROUP,
                     Constants.PROVIDER_MODEL_VERSION,
                     this._namespace,
                     SiloEntity.PLURAL,
                     siloEntity.Metadata.Name
-                ))?.ToObject<SiloEntity>();
+                )).Deserialize<SiloEntity>();
             }
             catch (HttpOperationException ex)
             {
@@ -203,13 +203,13 @@ internal class KubeMembershipTable : IMembershipTable
 
             try
             {
-                entity = ((JObject)await this._kubeClient.GetNamespacedCustomObjectAsync(
+                entity = ((JsonElement) await this._kubeClient.GetNamespacedCustomObjectAsync(
                     Constants.ORLEANS_GROUP,
                     Constants.PROVIDER_MODEL_VERSION,
                     this._namespace,
                     SiloEntity.PLURAL,
                     name
-                ))?.ToObject<SiloEntity>();
+                )).Deserialize<SiloEntity>();
             }
             catch (HttpOperationException ex)
             {
@@ -255,17 +255,17 @@ internal class KubeMembershipTable : IMembershipTable
 
         try
         {
-            SiloEntity siloEntity = default;
+            SiloEntity siloEntity;
 
             try
             {
-                siloEntity = ((JObject)await this._kubeClient.GetNamespacedCustomObjectAsync(
+                siloEntity = ((JsonElement) await this._kubeClient.GetNamespacedCustomObjectAsync(
                     Constants.ORLEANS_GROUP,
                     Constants.PROVIDER_MODEL_VERSION,
                     this._namespace,
                     SiloEntity.PLURAL,
                     name
-                ))?.ToObject<SiloEntity>();
+                )).Deserialize<SiloEntity>();
             }
             catch (HttpOperationException ex)
             {
@@ -361,13 +361,13 @@ internal class KubeMembershipTable : IMembershipTable
 
             try
             {
-                version = ((JObject)await this._kubeClient.GetNamespacedCustomObjectAsync(
+                version = ((JsonElement) await this._kubeClient.GetNamespacedCustomObjectAsync(
                     Constants.ORLEANS_GROUP,
                     Constants.PROVIDER_MODEL_VERSION,
                     this._namespace,
                     ClusterVersionEntity.PLURAL,
                     this._clusterOptions.ClusterId
-                ))?.ToObject<ClusterVersionEntity>();
+                )).Deserialize<ClusterVersionEntity>();
             }
             catch (HttpOperationException ex)
             {
@@ -388,13 +388,13 @@ internal class KubeMembershipTable : IMembershipTable
                     Metadata = new V1ObjectMeta { Name = this._clusterOptions.ClusterId }
                 };
 
-                var created = ((JObject)await this._kubeClient.CreateNamespacedCustomObjectAsync(
+                var created = ((JsonElement)await this._kubeClient.CreateNamespacedCustomObjectAsync(
                     version,
                     Constants.ORLEANS_GROUP,
                     Constants.PROVIDER_MODEL_VERSION,
                     this._namespace,
                     ClusterVersionEntity.PLURAL
-                ))?.ToObject<ClusterVersionEntity>();
+                )).Deserialize<ClusterVersionEntity>();
 
                 if (created != null)
                 {
@@ -415,11 +415,17 @@ internal class KubeMembershipTable : IMembershipTable
 
     private async Task<ClusterVersionEntity> GetClusterVersion()
     {
-        var versions = ((JObject)await this._kubeClient.ListNamespacedCustomObjectAsync(
+        var versionsContainer = (JsonElement)await this._kubeClient.ListNamespacedCustomObjectAsync(
                 Constants.ORLEANS_GROUP,
                 Constants.PROVIDER_MODEL_VERSION,
-                this._namespace, ClusterVersionEntity.PLURAL)
-            )?["items"]?.ToObject<ClusterVersionEntity[]>();
+                this._namespace, ClusterVersionEntity.PLURAL);
+
+        if (versionsContainer.TryGetProperty("items", out var items) is false)
+        {
+            return null;
+        }
+
+        var versions = items.Deserialize<ClusterVersionEntity[]>();
 
         if (versions == null) return null;
 
@@ -429,13 +435,20 @@ internal class KubeMembershipTable : IMembershipTable
 
     private async Task<IReadOnlyList<SiloEntity>> GetSilos()
     {
-        var silos = ((JObject)await this._kubeClient.ListNamespacedCustomObjectAsync(
+        var silosContainer = (JsonElement)await this._kubeClient.ListNamespacedCustomObjectAsync(
                 Constants.ORLEANS_GROUP,
                 Constants.PROVIDER_MODEL_VERSION,
-                this._namespace, SiloEntity.PLURAL)
-            )?["items"]?.ToObject<SiloEntity[]>();
+                this._namespace, SiloEntity.PLURAL);
 
-        return silos.Where(s => s.ClusterId == this._clusterOptions.ClusterId).ToList();
+        if (silosContainer.TryGetProperty("items", out var items) is false)
+        {
+            return Array.Empty<SiloEntity>();
+        }
+
+        return items
+            .Deserialize<SiloEntity[]>()
+            .Where(s => s.ClusterId == this._clusterOptions.ClusterId)
+            .ToList();
     }
 
     private static MembershipEntry ParseEntity(SiloEntity entity)

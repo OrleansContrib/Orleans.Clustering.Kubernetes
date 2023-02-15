@@ -4,8 +4,8 @@ using System.Threading.Tasks;
 using System.Linq;
 using k8s.Models;
 using System.Collections.Generic;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Orleans.Clustering.Kubernetes.Test;
 
@@ -91,16 +91,16 @@ public class NewKubeClientTest : IClassFixture<KubeFixture>
             Image = "my-awesome-cron-image"
         };
 
-        var customObjCreated = ((JObject)await this._kubeClient.CreateNamespacedCustomObjectAsync(newCustomObj, "stable.example.com", "v1", "default", "crontabs")).ToObject<TestCustomObject>();
+        var customObjCreated = ((JsonElement)await this._kubeClient.CreateNamespacedCustomObjectAsync(newCustomObj, "stable.example.com", "v1", "default", "crontabs")).Deserialize<TestCustomObject>();
         Assert.NotNull(customObjCreated);
 
         var a = await this._kubeClient.ListNamespacedCustomObjectAsync("stable.example.com", "v1", "default", "crontabs");
 
-        var customObjs = ((JObject)await this._kubeClient.ListNamespacedCustomObjectAsync("stable.example.com", "v1", "default", "crontabs"))["items"].ToObject<TestCustomObject[]>();
+        var customObjs = ((JsonElement)await this._kubeClient.ListNamespacedCustomObjectAsync("stable.example.com", "v1", "default", "crontabs")).GetProperty("items").Deserialize<TestCustomObject[]>();
         Assert.NotNull(customObjs);
         Assert.True(customObjs.Length == 1);
 
-        var customObjFound = ((JObject)await this._kubeClient.GetNamespacedCustomObjectAsync("stable.example.com", "v1", "default", "crontabs", "my-new-cron-object")).ToObject<TestCustomObject>();
+        var customObjFound = ((JsonElement)await this._kubeClient.GetNamespacedCustomObjectAsync("stable.example.com", "v1", "default", "crontabs", "my-new-cron-object")).Deserialize<TestCustomObject>();
         Assert.NotNull(customObjFound);
 
         await this._kubeClient.DeleteNamespacedCustomObjectAsync("stable.example.com", "v1", "default", "crontabs", "my-new-cron-object");
@@ -110,19 +110,19 @@ public class NewKubeClientTest : IClassFixture<KubeFixture>
 
     private class TestCustomObject
     {
-        [JsonProperty("apiVersion")]
+        [JsonPropertyName("apiVersion")]
         public string ApiVersion { get; set; }
 
-        [JsonProperty("kind")]
+        [JsonPropertyName("kind")]
         public string Kind { get; set; }
 
-        [JsonProperty("CronSpec")]
+        [JsonPropertyName("CronSpec")]
         public string CronSpec { get; set; }
 
-        [JsonProperty("Image")]
+        [JsonPropertyName("Image")]
         public string Image { get; set; }
 
-        [JsonProperty("metadata")]
+        [JsonPropertyName("metadata")]
         public V1ObjectMeta Metadata { get; set; }
     }
 }

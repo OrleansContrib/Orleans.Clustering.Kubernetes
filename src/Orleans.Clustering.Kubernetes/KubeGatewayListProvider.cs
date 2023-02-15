@@ -1,7 +1,6 @@
 using k8s;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using Orleans.Clustering.Kubernetes.Models;
 using Orleans.Configuration;
 using Orleans.Messaging;
@@ -11,7 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Orleans.Clustering.Kubernetes;
@@ -33,7 +32,7 @@ internal class KubeGatewayListProvider : IGatewayListProvider
         IOptions<ClusterOptions> clusterOptions,
         IOptions<GatewayOptions> gatewayOptions,
         IOptions<KubeGatewayOptions> kubeGatewayOptions,
-        k8s.IKubernetes kubernetesClient
+        IKubernetes kubernetesClient
     )
     {
         this._loggerFactory = loggerFactory;
@@ -48,7 +47,18 @@ internal class KubeGatewayListProvider : IGatewayListProvider
     {
         try
         {
-            var silos = ((JObject)await this._kube.ListNamespacedCustomObjectAsync(Constants.ORLEANS_GROUP, Constants.PROVIDER_MODEL_VERSION, this._namespace, SiloEntity.PLURAL))?["items"]?.ToObject<SiloEntity[]>();
+            var silosContainer = (JsonElement) await this._kube.ListNamespacedCustomObjectAsync(
+                Constants.ORLEANS_GROUP,
+                Constants.PROVIDER_MODEL_VERSION,
+                this._namespace,
+                SiloEntity.PLURAL);
+
+            if (silosContainer.TryGetProperty("items", out var items) is false)
+            {
+                return Array.Empty<Uri>();
+            }
+
+            var silos = items.Deserialize<SiloEntity[]>();
             if (silos == null || silos.Length == 0) return Array.Empty<Uri>();
 
             var gateways = silos.Where(s => s.Status == SiloStatus.Active && s.ProxyPort != 0 && s.ClusterId == this._clusterId)

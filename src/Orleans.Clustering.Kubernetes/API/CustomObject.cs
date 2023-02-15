@@ -1,16 +1,16 @@
+using System.Text.Json.Serialization;
 using k8s.Models;
-using Newtonsoft.Json;
 
 namespace Orleans.Clustering.Kubernetes.API;
 
 internal abstract class CustomObject
 {
-    [JsonProperty("apiVersion")]
+    [JsonPropertyName("apiVersion")]
     public string ApiVersion { get; set; }
 
-    [JsonProperty("kind")]
+    [JsonPropertyName("kind")]
     public string Kind { get; set; }
 
-    [JsonProperty("metadata")]
+    [JsonPropertyName("metadata")]
     public V1ObjectMeta Metadata { get; set; }
 }
