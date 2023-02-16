@@ -12,7 +12,7 @@ This directory contains 3 projects to show a practical example of Orleans runnin
 
 1. Docker
 2. Kubernetes
-3. .Net Core 3.1 SDK
+3. .Net 7 SDK
 
 ## Running it
 
