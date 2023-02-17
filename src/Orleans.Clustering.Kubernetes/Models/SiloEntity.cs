@@ -14,7 +14,7 @@ internal class SiloEntity : BaseEntity
     public const string SINGULAR = "silo";
 
     [JsonIgnore]
-    public static readonly List<string> SHORT_NAME = new List<string> { "oso", "os" };
+    public static readonly List<string> SHORT_NAME = new() { "oso", "os" };
 
     [JsonIgnore]
     public const string KIND = "OrleansSilo";

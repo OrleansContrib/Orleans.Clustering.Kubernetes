@@ -18,9 +18,8 @@ namespace Orleans.Clustering.Kubernetes;
 internal class KubeGatewayListProvider : IGatewayListProvider
 {
     private readonly ILogger _logger;
-    private readonly ILoggerFactory _loggerFactory;
     private readonly string _clusterId;
-    private readonly k8s.IKubernetes _kube;
+    private readonly k8s.Kubernetes _kube;
     private readonly KubeGatewayOptions _kubeGatewayOptions;
     private string _namespace;
 
@@ -32,12 +31,11 @@ internal class KubeGatewayListProvider : IGatewayListProvider
         IOptions<ClusterOptions> clusterOptions,
         IOptions<GatewayOptions> gatewayOptions,
         IOptions<KubeGatewayOptions> kubeGatewayOptions,
-        IKubernetes kubernetesClient
+        k8s.Kubernetes kubernetesClient
     )
     {
-        this._loggerFactory = loggerFactory;
         this.MaxStaleness = gatewayOptions.Value.GatewayListRefreshPeriod;
-        this._logger = loggerFactory?.CreateLogger<KubeGatewayListProvider>();
+        this._logger = loggerFactory.CreateLogger<KubeGatewayListProvider>();
         this._kube = kubernetesClient;
         this._clusterId = clusterOptions.Value.ClusterId;
         this._kubeGatewayOptions = kubeGatewayOptions.Value;

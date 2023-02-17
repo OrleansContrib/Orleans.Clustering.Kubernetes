@@ -1,34 +1,32 @@
-using k8s;
-using k8s.Models;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Orleans.Clustering.Kubernetes.Models;
-using Orleans.Configuration;
-using Orleans.Runtime;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.Rest;
+using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Orleans.Runtime;
+using Orleans.Configuration;
+using Orleans.Clustering.Kubernetes.Models;
+using k8s;
+using k8s.Models;
+using k8s.Autorest;
 
 namespace Orleans.Clustering.Kubernetes;
 
 internal class KubeMembershipTable : IMembershipTable
 {
     private readonly ClusterOptions _clusterOptions;
-    private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger _logger;
-    private readonly k8s.IKubernetes _kubeClient;
+    private readonly k8s.Kubernetes _kubeClient;
     private string _namespace;
 
-    public KubeMembershipTable(ILoggerFactory loggerFactory, IOptions<ClusterOptions> clusterOptions, k8s.IKubernetes kubernetesClient)
+    public KubeMembershipTable(ILoggerFactory loggerFactory, IOptions<ClusterOptions> clusterOptions, k8s.Kubernetes kubernetesClient)
     {
         this._clusterOptions = clusterOptions.Value;
-        this._loggerFactory = loggerFactory;
-        this._logger = loggerFactory?.CreateLogger<KubeMembershipTable>();
+        this._logger = loggerFactory.CreateLogger<KubeMembershipTable>();
         this._kubeClient = kubernetesClient;
     }
 

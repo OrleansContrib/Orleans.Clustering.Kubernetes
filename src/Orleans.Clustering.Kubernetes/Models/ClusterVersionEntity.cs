@@ -12,7 +12,7 @@ internal class ClusterVersionEntity : BaseEntity
     public const string SINGULAR = "clusterversion";
 
     [JsonIgnore]
-    public static readonly List<string> SHORT_NAME = new List<string> { "ocv", "oc" };
+    public static readonly List<string> SHORT_NAME = new() { "ocv", "oc" };
 
     [JsonIgnore]
     public const string KIND = "OrleansClusterVersion";

@@ -26,14 +26,10 @@
     <PackageReference Include="Microsoft.Orleans.Runtime" Version="7.0.0" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <PackageReference Include="KubernetesClient" Version="7.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="3.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="3.0.0" />
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' != 'netstandard2.0' ">
-    <PackageReference Include="KubernetesClient" Version="7.0.7" />
+  <ItemGroup>
+    <PackageReference Include="KubernetesClient" Version="10.0.31" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="7.0.1" />
   </ItemGroup>
 
   <ItemGroup>

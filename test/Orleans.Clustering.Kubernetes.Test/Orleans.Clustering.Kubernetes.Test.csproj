@@ -15,7 +15,6 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="KubernetesClient" Version="7.0.7" />
   </ItemGroup>
 
   <ItemGroup>

@@ -17,7 +17,7 @@ namespace KubeClient;
 /// </summary>
 public static class Program
 {
-    private static readonly AutoResetEvent Closing = new AutoResetEvent(false);
+    private static readonly AutoResetEvent Closing = new(false);
 
     public static async Task<int> Main()
     {

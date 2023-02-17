@@ -11,7 +11,7 @@ namespace Orleans.Clustering.Kubernetes.Test;
 
 public class NewKubeClientTest : IClassFixture<KubeFixture>
 {
-    private k8s.Kubernetes _kubeClient;
+    private readonly k8s.Kubernetes _kubeClient;
 
     public NewKubeClientTest(KubeFixture fixture)
     {

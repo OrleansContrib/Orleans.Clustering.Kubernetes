@@ -11,7 +11,7 @@ public class HelloArchiveGrain : Grain<GreetingArchive>, IHelloArchive
     {
         this.State.Greetings.Add(greeting);
 
-        await WriteStateAsync();
+        await this.WriteStateAsync();
 
         return $"You said: '{greeting}', I say: Hello!";
     }
