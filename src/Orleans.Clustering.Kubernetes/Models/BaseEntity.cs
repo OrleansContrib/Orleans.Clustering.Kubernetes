@@ -1,10 +1,10 @@
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 using Orleans.Clustering.Kubernetes.API;
 
 namespace Orleans.Clustering.Kubernetes.Models;
 
 internal class BaseEntity : CustomObject
 {
-    [JsonProperty("clusterId")]
+    [JsonPropertyName("clusterId")]
     public string ClusterId { get; set; }
 }

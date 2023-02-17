@@ -1,8 +1,7 @@
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Orleans.Runtime;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Orleans.Clustering.Kubernetes.Models;
 
@@ -15,43 +14,43 @@ internal class SiloEntity : BaseEntity
     public const string SINGULAR = "silo";
 
     [JsonIgnore]
-    public static readonly List<string> SHORT_NAME = new List<string> { "oso", "os" };
+    public static readonly List<string> SHORT_NAME = new() { "oso", "os" };
 
     [JsonIgnore]
     public const string KIND = "OrleansSilo";
 
-    [JsonProperty("address")]
+    [JsonPropertyName("address")]
     public string Address { get; set; }
 
-    [JsonProperty("port")]
+    [JsonPropertyName("port")]
     public int Port { get; set; }
 
-    [JsonProperty("generation")]
+    [JsonPropertyName("generation")]
     public int Generation { get; set; }
 
-    [JsonProperty("hostname")]
+    [JsonPropertyName("hostname")]
     public string Hostname { get; set; }
 
-    [JsonConverter(typeof(StringEnumConverter))]
-    [JsonProperty("status")]
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonPropertyName("status")]
     public SiloStatus Status { get; set; }
 
-    [JsonProperty("proxyPort")]
+    [JsonPropertyName("proxyPort")]
     public int? ProxyPort { get; set; }
 
-    [JsonProperty("siloName")]
+    [JsonPropertyName("siloName")]
     public string SiloName { get; set; }
 
-    [JsonProperty("suspectingSilos")]
+    [JsonPropertyName("suspectingSilos")]
     public List<string> SuspectingSilos { get; set; } = new List<string>();
 
-    [JsonProperty("suspectingTimes")]
+    [JsonPropertyName("suspectingTimes")]
     public List<string> SuspectingTimes { get; set; } = new List<string>();
 
-    [JsonProperty("startTime")]
+    [JsonPropertyName("startTime")]
     public DateTimeOffset StartTime { get; set; }
 
-    [JsonProperty("iAmAliveTime")]
+    [JsonPropertyName("iAmAliveTime")]
     public DateTimeOffset IAmAliveTime { get; set; }
 
     public SiloEntity()

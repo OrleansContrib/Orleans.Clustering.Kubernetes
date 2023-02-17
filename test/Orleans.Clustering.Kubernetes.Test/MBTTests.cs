@@ -1,13 +1,12 @@
 using k8s;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Orleans;
-using Orleans.Clustering.Kubernetes;
-using Orleans.Clustering.Kubernetes.Test;
 using Orleans.Configuration;
 using Orleans.Messaging;
 using System.Threading.Tasks;
 using Xunit;
+
+namespace Orleans.Clustering.Kubernetes.Test;
 
 /// <summary>
 /// Tests for operation of Orleans Membership Table using Kuberneters Custom Objects

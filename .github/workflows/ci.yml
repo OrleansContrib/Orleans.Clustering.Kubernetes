@@ -10,17 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
-      # - uses: engineerd/setup-kind@v0.3.0
-      #   with:
-      #     config: .github/workflows/kind.yml
-      # - name: Setup Kube API
-      #   run: kubectl proxy &
+      - uses: actions/checkout@v3      
+      
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.4.0
+
+      - name: Setup CRDs
+        run: |
+          kubectl apply -f src/Orleans.Clustering.Kubernetes/Definitions
+          kubectl create ns orleans
+      
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 7.0.100
+      
       - name: Build
         run: dotnet build --configuration Release
-      # - name: Test
-      #   run: dotnet test --configuration Release --no-build
+      
+      - name: Test
+        run: dotnet test --configuration Release --no-build

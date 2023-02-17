@@ -1,7 +1,6 @@
 using k8s;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json.Linq;
 using Orleans.Clustering.Kubernetes.Models;
 using Orleans.Configuration;
 using Orleans.Messaging;
@@ -11,7 +10,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Orleans.Clustering.Kubernetes;
@@ -19,9 +18,8 @@ namespace Orleans.Clustering.Kubernetes;
 internal class KubeGatewayListProvider : IGatewayListProvider
 {
     private readonly ILogger _logger;
-    private readonly ILoggerFactory _loggerFactory;
     private readonly string _clusterId;
-    private readonly k8s.IKubernetes _kube;
+    private readonly k8s.Kubernetes _kube;
     private readonly KubeGatewayOptions _kubeGatewayOptions;
     private string _namespace;
 
@@ -33,12 +31,11 @@ internal class KubeGatewayListProvider : IGatewayListProvider
         IOptions<ClusterOptions> clusterOptions,
         IOptions<GatewayOptions> gatewayOptions,
         IOptions<KubeGatewayOptions> kubeGatewayOptions,
-        k8s.IKubernetes kubernetesClient
+        k8s.Kubernetes kubernetesClient
     )
     {
-        this._loggerFactory = loggerFactory;
         this.MaxStaleness = gatewayOptions.Value.GatewayListRefreshPeriod;
-        this._logger = loggerFactory?.CreateLogger<KubeGatewayListProvider>();
+        this._logger = loggerFactory.CreateLogger<KubeGatewayListProvider>();
         this._kube = kubernetesClient;
         this._clusterId = clusterOptions.Value.ClusterId;
         this._kubeGatewayOptions = kubeGatewayOptions.Value;
@@ -48,7 +45,18 @@ internal class KubeGatewayListProvider : IGatewayListProvider
     {
         try
         {
-            var silos = ((JObject)await this._kube.ListNamespacedCustomObjectAsync(Constants.ORLEANS_GROUP, Constants.PROVIDER_MODEL_VERSION, this._namespace, SiloEntity.PLURAL))?["items"]?.ToObject<SiloEntity[]>();
+            var silosContainer = (JsonElement) await this._kube.ListNamespacedCustomObjectAsync(
+                Constants.ORLEANS_GROUP,
+                Constants.PROVIDER_MODEL_VERSION,
+                this._namespace,
+                SiloEntity.PLURAL);
+
+            if (silosContainer.TryGetProperty("items", out var items) is false)
+            {
+                return Array.Empty<Uri>();
+            }
+
+            var silos = items.Deserialize<SiloEntity[]>();
             if (silos == null || silos.Length == 0) return Array.Empty<Uri>();
 
             var gateways = silos.Where(s => s.Status == SiloStatus.Active && s.ProxyPort != 0 && s.ClusterId == this._clusterId)
