@@ -34,3 +34,17 @@ var client = new ClientBuilder()
 The provider will discover the cluster based on the kubernetes namespace the silo pod is running. In the case of the client, if a configure delegate with the `Namespace` property set to a non-null value is specified, it will ignore the current running pod namespace and will try to use that namespace instead.
 
 Great! Now enjoy your Orleans application running within a Kubernetes cluster without needing an external membership provider! 
+
+# Security considerations
+
+This provider behaves like any regular application being hosted on Kubernetes. That means it doesn't care about the underlying kubernetes security model. In this particular provider however, it _expects_ the pod to have access to the API server. Usually this access is granted to the service account being used by the POD (for more on that check Kubernetes docs for service accounts) by enabling RBAC or whatever other authorization plugin your cluster is using.
+
+Regardless of the authorization plugin being used, ensure the following:
+
+1. The service account on the **Silo** pod has access to the Kubernetes API server to **read** and **write** objects (essentially `GET`, `LIST`, `PUT`, `DELETE`, `POST` permissions);
+2. The service account on the **Client** pod must be able to access the Kubernetes API server to **read** objects (`GET`and `LIST` permissions).
+
+
+# Contributions
+
+PRs and feedback are **very** welcome! This repo follows the same contributions guideline as Orleans does and github issues will have `help-wanted` topics as they are coming. 
