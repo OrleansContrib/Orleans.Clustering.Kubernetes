@@ -13,6 +13,7 @@ using Orleans.Clustering.Kubernetes.Models;
 using k8s;
 using k8s.Models;
 using k8s.Autorest;
+using Orleans.Clustering.Kubernetes.Extensions;
 
 namespace Orleans.Clustering.Kubernetes;
 
@@ -136,8 +137,7 @@ internal class KubeMembershipTable : IMembershipTable
         }
         catch (Exception exc)
         {
-            this._logger?.LogError(exc, "Unable to insert Silo Entry");
-
+            _logger?.LogError(exc, "Unable to insert Silo Entry");
             throw;
         }
     }
@@ -359,7 +359,7 @@ internal class KubeMembershipTable : IMembershipTable
 
             try
             {
-                version = ((JsonElement) await this._kubeClient.GetNamespacedCustomObjectAsync(
+                version = ((JsonElement)await this._kubeClient.GetNamespacedCustomObjectAsync(
                     Constants.ORLEANS_GROUP,
                     Constants.PROVIDER_MODEL_VERSION,
                     this._namespace,
@@ -396,13 +396,19 @@ internal class KubeMembershipTable : IMembershipTable
 
                 if (created != null)
                 {
-                    this._logger?.LogInformation("Created new Cluster Version entity for Cluster {ClusterId}", this._clusterOptions.ClusterId);
+                    this._logger?.LogInformation("Created new Cluster Version entity for Cluster {ClusterId}",
+                        this._clusterOptions.ClusterId);
                 }
             }
             else
             {
-                this._logger?.LogInformation("Cluster {ClusterId} already exists. Trying to join it", this._clusterOptions.ClusterId);
+                this._logger?.LogInformation("Cluster {ClusterId} already exists. Trying to join it",
+                    this._clusterOptions.ClusterId);
             }
+        }
+        catch (HttpOperationException exception)
+        {
+            this._logger?.LogWarning(exception, "Failed to initialize ClusterVersion: {details}", exception.GetServerResponse());
         }
         catch (Exception exc)
         {
