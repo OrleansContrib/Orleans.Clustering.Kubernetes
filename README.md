@@ -83,6 +83,11 @@ The provider will discover the cluster based on the kubernetes namespace the sil
 
 Great! Now enjoy your Orleans application running within a Kubernetes cluster without needing an external membership provider! 
 
+Note: Deployment file needs to have this property set to true so that the service account token is automounted. Otherwise, the Kubernetes Service APIs Fail.
+```
+      automountServiceAccountToken: true
+```
+
 # Security considerations
 
 This provider behaves like any regular application being hosted on Kubernetes. That means it doesn't care about the underlying kubernetes security model. In this particular provider however, it _expects_ the pod to have access to the API server. Usually this access is granted to the service account being used by the POD (for more on that check Kubernetes docs for service accounts) by enabling RBAC or whatever other authorization plugin your cluster is using.
