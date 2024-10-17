@@ -106,7 +106,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
 
         var data = await this.membershipTable.ReadAll();
         Assert.NotNull(data);
-        Assert.Equal(0, data.Members.Count);
+        Assert.Empty(data.Members);
 
         var version = data.Version;
         foreach (var membershipEntry in membershipEntries)
@@ -135,7 +135,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
 
         this.logger?.LogInformation("Membership.ReadAll returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
-        Assert.Equal(0, data.Members.Count);
+        Assert.Empty(data.Members);
         Assert.NotNull(data.Version.VersionEtag);
         Assert.Equal(0, data.Version.Version);
     }
@@ -146,7 +146,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
 
         var data = await this.membershipTable.ReadAll();
         Assert.NotNull(data);
-        Assert.Equal(0, data.Members.Count);
+        Assert.Empty(data.Members);
 
         TableVersion nextTableVersion = data.Version.Next();
 
@@ -158,7 +158,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
         if (extendedProtocol)
             Assert.Equal(1, data.Version.Version);
 
-        Assert.Equal(1, data.Members.Count);
+        Assert.Single(data.Members);
     }
 
     protected async Task MembershipTable_CleanUp(bool extendedProtocol = true)
@@ -178,7 +178,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
 
         var data = await this.membershipTable.ReadAll();
         Assert.NotNull(data);
-        Assert.Equal(0, data.Members.Count);
+        Assert.Empty(data.Members);
 
         TableVersion nextTableVersion = data.Version.Next();
         membershipEntry.Status = SiloStatus.Dead;
@@ -190,13 +190,13 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
         if (extendedProtocol)
             Assert.Equal(1, data.Version.Version);
 
-        Assert.Equal(1, data.Members.Count);
+        Assert.Single(data.Members);
 
         await this.membershipTable.CleanupDefunctSiloEntries(DateTimeOffset.UtcNow);
 
         data = await this.membershipTable.ReadAll();
 
-        Assert.Equal(0, data.Members.Count);
+        Assert.Empty(data.Members);
     }
 
     protected async Task MembershipTable_ReadRow_Insert_Read(bool extendedProtocol = true)
@@ -205,7 +205,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
 
         this.logger?.LogInformation("Membership.ReadAll returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
-        Assert.Equal(0, data.Members.Count);
+        Assert.Empty(data.Members);
 
         TableVersion newTableVersion = data.Version.Next();
 
@@ -235,7 +235,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
 
         data = await this.membershipTable.ReadAll();
 
-        Assert.Equal(1, data.Members.Count);
+        Assert.Single(data.Members);
 
         data = await this.membershipTable.ReadRow(newEntry.SiloAddress);
         if (extendedProtocol)
@@ -243,7 +243,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
 
         this.logger?.LogInformation("Membership.ReadRow returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
-        Assert.Equal(1, data.Members.Count);
+        Assert.Single(data.Members);
         Assert.NotNull(data.Version.VersionEtag);
         if (extendedProtocol)
         {
@@ -263,7 +263,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
         MembershipTableData data = await this.membershipTable.ReadAll();
         this.logger?.LogInformation("Membership.ReadAll returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
-        Assert.Equal(0, data.Members.Count);
+        Assert.Empty(data.Members);
 
         TableVersion newTableVersion = data.Version.Next();
 
@@ -275,7 +275,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
         data = await this.membershipTable.ReadAll();
         this.logger?.LogInformation("Membership.ReadAll returned TableVersion={TableVersion} Data={Data}", data.Version, data);
 
-        Assert.Equal(1, data.Members.Count);
+        Assert.Single(data.Members);
         Assert.NotNull(data.Version.VersionEtag);
 
         if (extendedProtocol)
@@ -298,7 +298,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
         Assert.NotNull(tableData.Version);
 
         Assert.Equal(0, tableData.Version.Version);
-        Assert.Equal(0, tableData.Members.Count);
+        Assert.Empty(tableData.Members);
 
         for (int i = 1; i < 10; i++)
         {
@@ -414,7 +414,7 @@ public abstract class MembershipTableTestsBase : IDisposable //, IClassFixture<C
         if (extendedProtocol)
             Assert.Equal(20, tableData.Version.Version);
 
-        Assert.Equal(1, tableData.Members.Count);
+        Assert.Single(tableData.Members);
     }
 
     protected async Task MembershipTable_UpdateIAmAlive(bool extendedProtocol = true)
