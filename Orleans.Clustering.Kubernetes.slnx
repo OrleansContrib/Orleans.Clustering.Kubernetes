@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/samples/">
+    <File Path="samples/README.md" />
+    <Project Path="samples/HelloWorld.Grains/HelloWorld.Grains.csproj" />
+    <Project Path="samples/HelloWorld.Interfaces/HelloWorld.Interfaces.csproj" />
+    <Project Path="samples/KubeClient/KubeClient.csproj" />
+    <Project Path="samples/KubeGatewayHost/KubeGatewayHost.csproj" />
+    <Project Path="samples/KubeSiloHost/KubeSiloHost.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".circleci/config.yml" />
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="README.md" />
+    <File Path="README.Nuget.md" />
+    <File Path="swagger.json" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Orleans.Clustering.Kubernetes/Orleans.Clustering.Kubernetes.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Orleans.Clustering.Kubernetes.Test/Orleans.Clustering.Kubernetes.Test.csproj" />
+  </Folder>
+</Solution>
